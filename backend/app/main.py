@@ -1,10 +1,9 @@
+import uvicorn
+
+from app.settings.config import settings
 from fastapi import FastAPI
 from app.api.routes import router as api_router
-import uvicorn
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 app = FastAPI(
     title="Phishing Detection API",
@@ -16,5 +15,5 @@ app.include_router(api_router,prefix="/api")
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT",8000))
-    uvicorn.run(app, host="0.0.0.0", port=port,reload=True)
+    port = settings.PORT
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port,reload=True)

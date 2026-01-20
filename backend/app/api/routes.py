@@ -11,8 +11,7 @@ async def scan_email(email_data: EmailRequest):
     """
     print(f"Received scan request for: {email_data.subject} from {email_data.sender}")
     return ScanResponse(
-        is_phishing=False,
-        score=0.0,
-        reasons=[],
-        confidence=0.0
+        classification="Safe",        
+        confidence_score=0.1,      
+        reasons=["Initial connectivity test successful"]
     )
