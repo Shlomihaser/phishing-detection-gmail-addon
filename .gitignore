@@ -2,3 +2,18 @@ backend/venv/
 backend/__pycache__/
 backend/*.pyc
 backend/.env
+
+# Python Standard
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# Datasets
+*.csv
+backend/ml/dataset/
+backend/ml/CEAS_08.csv
