@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from ..models.email_request import EmailRequest
-from ..services.email_parser import EmailParser
-from ..services.scoring_service import ScoringService
-from ..services.ml_service import MLService
-from ..models.risk import RiskLevel
-from ..models.scan_response import ScanResponse
+from app.models.email_request import EmailRequest
+from app.services.email_parser import EmailParser
+from app.services.scoring_service import ScoringService
+from app.services.ml_service import MLService
+from app.models.risk import RiskLevel
+from app.models.scan_response import ScanResponse
 
 router = APIRouter()
 scoring_service = ScoringService()
@@ -14,7 +14,7 @@ ml_service = MLService()
 async def scan_email(email_data: EmailRequest):
     """
     Endpoint logic:
-    Receives email data, triggers analysis (Heuristics + ML), and returns phishing classification.
+    Receives email data, triggers analysis (Detectors + ML), and returns phishing classification.
     """
     print(f"Received scan request for: {email_data.subject} from {email_data.sender}")
 
@@ -22,7 +22,7 @@ async def scan_email(email_data: EmailRequest):
     parser = EmailParser(email_data)
     parsed_email = parser.parse()
 
-    # 2. Heuristic based analysis
+    # 2. Detectors based analysis
     risk_assessment = scoring_service.calculate_risk(parsed_email)
     
     # 3. ML model based analysis
@@ -32,25 +32,25 @@ async def scan_email(email_data: EmailRequest):
     
     # 4. Integrate ML Score into Confidence
     # Strategy: 
-    # - Heuristic Score is 0-100.
+    # - Detectors Score is 0-100.
     # - ML Confidence is 0.0-1.0 (for Phishing).
     # - We want a unified view.
     
-    heuristic_score = risk_assessment.score # 0-100
+    detectors_score = risk_assessment.score # 0-100
     ml_score = ml_result['confidence'] * 100 # Scale to 0-100
     
-    # If ML strongly predicts phishing, it overrides valid-looking heuristics (unless whitelisted).
-    # If Heuristics see specific danger (like typoquatting) that ML missed, we keep it high.
+    # If ML strongly predicts phishing, it overrides valid-looking detectors (unless whitelisted).
+    # If Detectors see specific danger (like typoquatting) that ML missed, we keep it high.
     
-    final_score = max(heuristic_score, ml_score)
+    final_score = max(detectors_score, ml_score)
     
     # Determine Status based on final score
     if final_score >= 70:
-        status = "dangerous"
+        status = RiskLevel.DANGEROUS
     elif final_score >= 30:
-        status = "suspicious"
+        status = RiskLevel.SUSPICIOUS
     else:
-        status = "safe"
+        status = RiskLevel.SAFE
 
     # Add ML details to reasons if relevant
     if ml_result['is_phishing']:
@@ -61,7 +61,7 @@ async def scan_email(email_data: EmailRequest):
         "confidence": final_score, # 0-100
         "reasons": risk_assessment.reasons,
         "details": {
-            "heuristic_score": heuristic_score,
+            "detectors_score": detectors_score,
             "ml_score": ml_score
         }
     }

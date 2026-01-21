@@ -1,10 +1,10 @@
 import re
 from typing import Optional
-from ....models.domain import Email
-from ....models.risk import HeuristicDetail
-from ..base import HeuristicRule
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.detectors.base import BaseDetector
 
-class SuspiciousLinkRule(HeuristicRule):
+class SuspiciousLinkDetector(BaseDetector):
     def __init__(self):
         # Common URL shorteners used to hide destinations
         self.shorteners = {
@@ -12,7 +12,7 @@ class SuspiciousLinkRule(HeuristicRule):
             "is.gd", "buff.ly", "adf.ly", "bit.do", "mcaf.ee", "tr.im"
         }
 
-    def evaluate(self, email: Email) -> Optional[HeuristicDetail]:
+    def evaluate(self, email: Email) -> Optional[DetectorResult]:
         suspicious_count = 0
         reasons = []
 
@@ -45,8 +45,8 @@ class SuspiciousLinkRule(HeuristicRule):
                 reasons.append(f"URL Shortener: {url}")
             
         if suspicious_count > 0:
-             return HeuristicDetail(
-                rule_name="Suspicious Links",
+             return DetectorResult(
+                detector_name="Suspicious Links",
                 score_impact=20.0 * suspicious_count,
                 description=f"Found {suspicious_count} suspicious link(s): {', '.join(reasons[:3])}"
             )

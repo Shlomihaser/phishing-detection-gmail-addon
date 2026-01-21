@@ -1,10 +1,10 @@
 from typing import Optional
-from ....models.domain import Email
-from ....models.risk import HeuristicDetail
-from ..base import HeuristicRule
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.detectors.base import BaseDetector
 
-class AuthRule(HeuristicRule):
-    def evaluate(self, email: Email) -> Optional[HeuristicDetail]:
+class AuthDetector(BaseDetector):
+    def evaluate(self, email: Email) -> Optional[DetectorResult]:
         auth = email.auth_results
         failed = []
         
@@ -16,8 +16,8 @@ class AuthRule(HeuristicRule):
             failed.append("DMARC")
             
         if failed:
-            return HeuristicDetail(
-                rule_name="Authentication Failure",
+            return DetectorResult(
+                detector_name="Authentication Failure",
                 score_impact=30.0 * len(failed),
                 description=f"Email failed authentication checks: {', '.join(failed)}"
             )

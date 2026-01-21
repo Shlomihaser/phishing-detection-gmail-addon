@@ -3,8 +3,8 @@ import mailparser
 from typing import List, Dict
 from datetime import datetime
 from email.utils import parseaddr
-from ..models.domain import Email, AuthHeaders, Link
-from ..models.email_request import EmailRequest
+from app.models.domain import Email, AuthHeaders, Link
+from app.models.email_request import EmailRequest
 
 class EmailParser:
     """
@@ -36,7 +36,7 @@ class EmailParser:
             message_id=self.email_request.messageId,
             sender_name=sender_name,
             sender_email=sender_email,
-            reply_to=self.mail.headers.get("Reply-To"),
+            reply_to=self._get_reply_to_address(),
             subject=self.email_request.subject,
             creation_date=creation_date,
             body_text=text_content, 
@@ -45,6 +45,28 @@ class EmailParser:
             auth_results=auth_headers,
             headers=self._get_important_headers()
         )
+
+    def _get_reply_to_address(self) -> str | None:
+        """
+        Safely extracts the Reply-To address.
+        mail-parser often returns this as a list of tuples: [('Name', 'email@domain.com')]
+        """
+        reply_to = self.mail.headers.get("Reply-To")
+        
+        if not reply_to:
+            return None
+            
+        # Handle list case (e.g. [('Name', 'email')] or ['email'])
+        if isinstance(reply_to, list):
+            if not reply_to:
+                return None
+            first_item = reply_to[0]
+            if isinstance(first_item, tuple):
+                # Return the email part (2nd element)
+                return first_item[1]
+            return str(first_item)
+            
+        return str(reply_to)
 
     def _extract_auth_headers(self) -> AuthHeaders:
         """

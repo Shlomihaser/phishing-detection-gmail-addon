@@ -2,7 +2,7 @@ import uvicorn
 
 from app.settings.config import settings
 from fastapi import FastAPI
-from app.api.routes import router as api_router
+from app.api.endpoints.scan import router as api_router
 
 
 app = FastAPI(

@@ -7,8 +7,8 @@ class RiskLevel(str, Enum):
     SUSPICIOUS = "SUSPICIOUS"
     DANGEROUS = "DANGEROUS"
 
-class HeuristicDetail(BaseModel):
-    rule_name: str
+class DetectorResult(BaseModel):
+    detector_name: str
     score_impact: float
     description: str
 
@@ -16,4 +16,4 @@ class RiskAssessment(BaseModel):
     score: float 
     level: RiskLevel
     reasons: List[str] 
-    details: List[HeuristicDetail] 
+    details: List[DetectorResult] 

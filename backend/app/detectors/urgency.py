@@ -1,10 +1,10 @@
 from typing import Optional
-from ....models.domain import Email
-from ....models.risk import HeuristicDetail
-from ..base import HeuristicRule
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.detectors.base import BaseDetector
 
-class UrgencyRule(HeuristicRule):
-    def evaluate(self, email: Email) -> Optional[HeuristicDetail]:
+class UrgencyDetector(BaseDetector):
+    def evaluate(self, email: Email) -> Optional[DetectorResult]:
         triggers = [
             "urgent", "action required", "verify your account", 
             "suspended", "locked", "immediately", "24 hours"
@@ -19,8 +19,8 @@ class UrgencyRule(HeuristicRule):
         
         if found_triggers:
             impact = min(10.0 * len(found_triggers), 40.0) 
-            return HeuristicDetail(
-                rule_name="Urgent Language",
+            return DetectorResult(
+                detector_name="Urgent Language",
                 score_impact=impact,
                 description=f"Detected urgent or pressuring language: {', '.join(found_triggers[:3])}"
             )

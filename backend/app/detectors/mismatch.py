@@ -1,11 +1,11 @@
 from typing import Optional
-from ....models.domain import Email
-from ....models.risk import HeuristicDetail
-from ..base import HeuristicRule
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.detectors.base import BaseDetector
 import re
 
-class LinkMismatchRule(HeuristicRule):
-    def evaluate(self, email: Email) -> Optional[HeuristicDetail]:
+class LinkMismatchDetector(BaseDetector):
+    def evaluate(self, email: Email) -> Optional[DetectorResult]:
         mismatched_links = []
         
         for link in email.urls:
@@ -33,8 +33,8 @@ class LinkMismatchRule(HeuristicRule):
 
         if mismatched_links:
             # Very high severity because this is almost always malicious
-            return HeuristicDetail(
-                rule_name="Link Mismatch (Hidden URL)",
+            return DetectorResult(
+                detector_name="Link Mismatch (Hidden URL)",
                 score_impact=75.0, 
                 description=f"Detected mismatch between visible text and actual link destination: {', '.join(mismatched_links[:2])}"
             )

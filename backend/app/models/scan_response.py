@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List
 
 class ScanDetails(BaseModel):
-    heuristic_score: float
+    detectors_score: float
     ml_score: float
 
 class ScanResponse(BaseModel):

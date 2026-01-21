@@ -2,28 +2,28 @@ from typing import List
 from ..models.domain import Email
 from ..models.risk import RiskAssessment, RiskLevel
 
-from .heuristics.base import HeuristicRule
-from .heuristics.rules.auth import AuthRule
-from .heuristics.rules.sender import SenderMismatchRule
-from .heuristics.rules.links import SuspiciousLinkRule
-from .heuristics.rules.urgency import UrgencyRule
-from .heuristics.rules.mismatch import LinkMismatchRule
+from app.detectors.base import BaseDetector
+from app.detectors.auth import AuthDetector
+from app.detectors.sender import SenderMismatchDetector
+from app.detectors.links import SuspiciousLinkDetector
+from app.detectors.urgency import UrgencyDetector
+from app.detectors.mismatch import LinkMismatchDetector
 
 class ScoringService:
-    def __init__(self, rules: List[HeuristicRule] = None):
+    def __init__(self, detectors: List[BaseDetector] = None):
         """
-        Initialize the service with a specific set of rules.
-        If no rules are provided, loads the default set.
+        Initialize the service with a specific set of detectors.
+        If no detectors are provided, loads the default set.
         """
-        if rules is not None:
-             self.rules = rules
+        if detectors is not None:
+             self.detectors = detectors
         else:
-            self.rules = [
-                AuthRule(),
-                SenderMismatchRule(),
-                UrgencyRule(),
-                SuspiciousLinkRule(),
-                LinkMismatchRule()
+            self.detectors = [
+                AuthDetector(),
+                SenderMismatchDetector(),
+                UrgencyDetector(),
+                SuspiciousLinkDetector(),
+                LinkMismatchDetector()
             ]
 
     def calculate_risk(self, email: Email) -> RiskAssessment:
@@ -31,8 +31,8 @@ class ScoringService:
         details = []
         reasons = []
         
-        for rule in self.rules:
-            result = rule.evaluate(email)
+        for detector in self.detectors:
+            result = detector.evaluate(email)
             if result:
                 total_score += result.score_impact
                 details.append(result)
