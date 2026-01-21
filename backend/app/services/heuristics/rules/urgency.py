@@ -1,5 +1,5 @@
 from typing import Optional
-from ....models.internal import Email
+from ....models.domain import Email
 from ....models.risk import HeuristicDetail
 from ..base import HeuristicRule
 

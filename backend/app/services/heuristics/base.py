@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from ...models.internal import Email
+from ...models.domain import Email
 from ...models.risk import HeuristicDetail
 
 class HeuristicRule(ABC):

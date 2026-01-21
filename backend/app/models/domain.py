@@ -2,6 +2,10 @@ from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import datetime
 
+class Link(BaseModel):
+    url: str
+    text: Optional[str] = None
+
 class AuthHeaders(BaseModel):
     spf: Optional[str] = None
     dkim: Optional[str] = None
@@ -15,12 +19,9 @@ class Email(BaseModel):
     subject: str
     creation_date: datetime
     
-    # extracted content
     body_text: str
-    urls: List[str]
+    urls: List[Link]
     email_addresses: List[str]
-    
-    # extracted headers
     auth_results: AuthHeaders
     headers: Dict[str, str]
 

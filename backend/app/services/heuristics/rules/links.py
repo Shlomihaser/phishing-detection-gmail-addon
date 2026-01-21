@@ -1,6 +1,6 @@
 import re
 from typing import Optional
-from ....models.internal import Email
+from ....models.domain import Email
 from ....models.risk import HeuristicDetail
 from ..base import HeuristicRule
 
@@ -24,7 +24,8 @@ class SuspiciousLinkRule(HeuristicRule):
         # Hex/Octal: 0x7f000001 or 0177.0.0.1 (leading zeros check is complex, focusing on 0x)
         hex_ip_pattern = r'https?://0x[a-fA-F0-9]+'
         
-        for url in email.urls:
+        for link in email.urls:
+            url = link.url  # Access the url string from the Link object
             url_lower = url.lower()
             
             # Check 1: Raw IP or Obfuscated IP

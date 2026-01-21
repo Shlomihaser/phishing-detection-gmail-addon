@@ -1,5 +1,5 @@
 from typing import List
-from ..models.internal import Email
+from ..models.domain import Email
 from ..models.risk import RiskAssessment, RiskLevel
 
 from .heuristics.base import HeuristicRule
@@ -7,6 +7,7 @@ from .heuristics.rules.auth import AuthRule
 from .heuristics.rules.sender import SenderMismatchRule
 from .heuristics.rules.links import SuspiciousLinkRule
 from .heuristics.rules.urgency import UrgencyRule
+from .heuristics.rules.mismatch import LinkMismatchRule
 
 class ScoringService:
     def __init__(self, rules: List[HeuristicRule] = None):
@@ -21,7 +22,8 @@ class ScoringService:
                 AuthRule(),
                 SenderMismatchRule(),
                 UrgencyRule(),
-                SuspiciousLinkRule()
+                SuspiciousLinkRule(),
+                LinkMismatchRule()
             ]
 
     def calculate_risk(self, email: Email) -> RiskAssessment:

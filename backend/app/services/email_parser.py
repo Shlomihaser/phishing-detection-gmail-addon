@@ -3,7 +3,7 @@ import mailparser
 from typing import List, Dict
 from datetime import datetime
 from email.utils import parseaddr
-from ..models.internal import Email, AuthHeaders
+from ..models.domain import Email, AuthHeaders, Link
 from ..models.email_request import EmailRequest
 
 class EmailParser:
@@ -71,18 +71,44 @@ class EmailParser:
         
         return AuthHeaders(spf=spf, dkim=dkim, dmarc=dmarc)
 
-    def _extract_urls(self, text: str, html: str) -> List[str]:
-        urls = set()
-        url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*[^.,;!?)\]\s]'
-        urls.update(re.findall(url_pattern, text))
+    def _extract_urls(self, text: str, html: str) -> List[Link]:
+        """
+        Extracts URLs from both plain text and HTML.
+        Returns a list of Link objects (containing url and visible text).
+        """
+        links = []
+        seen_urls = set()
 
-        html_url_pattern = r'href=[\'"]?(https?://[^\'" >]+)'
-        found_html_urls = re.findall(html_url_pattern, html)
+        # 1. HTML Links (Best source for text)
+        # Regex to capture <a ... href="...">TEXT</a>
+        # This is a basic heuristic regex. Ideally use BS4 if accuracy is critical.
+        # Capture group 1: URL, Capture group 2: Visible Text
+        html_link_pattern = r'<a\s+(?:[^>]*?\s+)?href=["\'](.*?)["\'][^>]*>(.*?)</a>'
+        for match in re.finditer(html_link_pattern, html, re.IGNORECASE | re.DOTALL):
+            url = match.group(1).strip()
+            text_content = match.group(2).strip()
+            # Clean HTML tags from text (e.g. bold tags inside link)
+            clean_text = re.sub(r'<[^>]+>', '', text_content).strip()
+            
+            if url:
+                links.append(Link(url=url, text=clean_text))
+                seen_urls.add(url)
 
-        for url in found_html_urls:
-            urls.add(url.strip('.,;!?) \n\r'))
-
-        return list(urls)
+        # 2. Plain Text / Remaining Links (No specific text)
+        text_url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*[^.,;!?)\]\s]'
+        
+        # Combine text and remaining HTML hrefs
+        all_text_matches = re.findall(text_url_pattern, text)
+        href_pattern = r'href=[\'"]?(https?://[^\'" >]+)' 
+        all_href_matches = re.findall(href_pattern, html)
+        
+        for url in all_text_matches + all_href_matches:
+            clean_url = url.strip('.,;!?) \n\r')
+            if clean_url not in seen_urls:
+                links.append(Link(url=clean_url, text=None))
+                seen_urls.add(clean_url)
+                
+        return links
 
     def _extract_emails(self, text: str) -> List[str]:
         email_pattern = r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b'
