@@ -7,7 +7,7 @@ class AuthHeaders(BaseModel):
     dkim: Optional[str] = None
     dmarc: Optional[str] = None
 
-class ParsedEmail(BaseModel):
+class Email(BaseModel):
     message_id: str
     sender_name: Optional[str]
     sender_email: str
@@ -23,3 +23,5 @@ class ParsedEmail(BaseModel):
     # extracted headers
     auth_results: AuthHeaders
     headers: Dict[str, str]
+
+

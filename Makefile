@@ -2,7 +2,6 @@ VENV = backend/venv
 PYTHON = $(VENV)/Scripts/python
 PIP = $(VENV)/Scripts/pip
 
-
 run:
 	@echo "Starting FastAPI Server..."
 	export PYTHONPATH=backend && $(PYTHON) -m app.main

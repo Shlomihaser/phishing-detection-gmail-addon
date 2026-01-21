@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+mail-parser
+pydantic
