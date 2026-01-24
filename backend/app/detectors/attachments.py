@@ -54,10 +54,12 @@ class HarmfulAttachmentDetector(BaseDetector):
                     reasons.append(f"malicious file type ({ext})")
                     max_risk_score = max(max_risk_score, 100.0)
 
-                # Check 2: Missing Extension
+                # Check 2: Missing Extension (but allow if it's a safe content type like image)
                 if not ext:
-                    reasons.append("missing file extension")
-                    max_risk_score = max(max_risk_score, 25.0)
+                    # Don't flag inline images/text that just have auto-generated names
+                    if not detected_mime.startswith(('image/', 'text/')):
+                        reasons.append("missing file extension")
+                        max_risk_score = max(max_risk_score, 25.0)
 
                 # Check 3: Double Extension Trick
                 fake_def = FILE_DEFINITIONS.get(fake_ext)
@@ -69,26 +71,11 @@ class HarmfulAttachmentDetector(BaseDetector):
                 # Check 4: Content Spoofing (MIME Mismatch)
                 if file_def and file_def.get('mime'):
                     expected_mime = file_def['mime']
-                    is_valid = (detected_mime == expected_mime)
                     
-                    # Loosen Logic: Allow legitimate mismatches
-                    # 1. Office files are effectively zips
-                    if not is_valid and 'openxml' in expected_mime and detected_mime == 'application/zip':
-                        is_valid = True
-                    # 2. Text-based files (CSV, XML, Code) often read as text/plain
-                    if not is_valid and 'text/plain' in detected_mime and expected_mime in ['text/csv', 'application/json', 'text/xml']:
-                        is_valid = True
-                    # 3. Code files (py, js) are text
-                    if not is_valid and 'text/plain' in detected_mime and ext in ['py', 'js', 'java', 'html', 'css']:
-                        is_valid = True
-
-                    if not is_valid:
-                        # If we expected Safe but got Executable -> 100
+                    if not self._is_mime_match_valid(detected_mime, expected_mime, ext):
+                        # Hidden executable is critical
                         if is_executable:
                             max_risk_score = max(max_risk_score, 100.0)
-                        # Minor mismatch (e.g. png vs jpg) -> 25 (Warning)
-                        elif 'image' in expected_mime and 'image' in detected_mime:
-                            pass  # Allow jpg/png mixups
                         else:
                             reasons.append(f"file content ({detected_mime}) does not match extension (expected {expected_mime})")
                             max_risk_score = max(max_risk_score, 75.0)
@@ -120,3 +107,22 @@ class HarmfulAttachmentDetector(BaseDetector):
             score_impact=max_risk_score,
             description="Suspicious attachments detected: " + "; ".join(issue_details)
         )
+
+    def _is_mime_match_valid(self, detected: str, expected: str, ext: str) -> bool:
+        """
+        Check if a MIME type mismatch is acceptable using FILE_DEFINITIONS.
+        """
+        # Exact match
+        if detected == expected:
+            return True
+        
+        # Check if detected MIME is in allowed alternatives
+        file_def = FILE_DEFINITIONS.get(ext)
+        if file_def:
+            allowed_alt = file_def.get('alt', [])
+            if detected in allowed_alt:
+                return True
+        
+        return False
+
+

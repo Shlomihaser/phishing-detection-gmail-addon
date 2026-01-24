@@ -1,5 +1,5 @@
 # Unified File Security Definitions
-# Format: 'ext': {'type': 'SAFE'|'DANGEROUS', 'mime': 'mime/type'}
+# Format: 'ext': {'type': 'SAFE'|'DANGEROUS', 'mime': 'expected_mime', 'alt': ['allowed', 'alternatives']}
 
 FILE_DEFINITIONS = {
     # Dangerous Scripts & Executables (Block by Name)
@@ -14,18 +14,26 @@ FILE_DEFINITIONS = {
     'msi': {'type': 'DANGEROUS', 'mime': 'application/x-msi'}, 
     
     # Safe Documents (Verify by Content)
-    'pdf':  {'type': 'SAFE', 'mime': 'application/pdf'},
-    'png':  {'type': 'SAFE', 'mime': 'image/png'},
-    'jpg':  {'type': 'SAFE', 'mime': 'image/jpeg'},
-    'jpeg': {'type': 'SAFE', 'mime': 'image/jpeg'},
-    'gif':  {'type': 'SAFE', 'mime': 'image/gif'},
+    # 'alt' = alternative MIME types that magic might detect (false positive prevention)
+    'pdf':  {'type': 'SAFE', 'mime': 'application/pdf', 'alt': ['text/plain', 'application/octet-stream']},
+    'png':  {'type': 'SAFE', 'mime': 'image/png', 'alt': ['image/jpeg', 'image/gif']},
+    'jpg':  {'type': 'SAFE', 'mime': 'image/jpeg', 'alt': ['image/png']},
+    'jpeg': {'type': 'SAFE', 'mime': 'image/jpeg', 'alt': ['image/png']},
+    'gif':  {'type': 'SAFE', 'mime': 'image/gif', 'alt': ['image/png']},
     'zip':  {'type': 'SAFE', 'mime': 'application/zip'},
-    'doc':  {'type': 'SAFE', 'mime': 'application/msword'},
-    'xls':  {'type': 'SAFE', 'mime': 'application/vnd.ms-excel'},
-    'csv':  {'type': 'SAFE', 'mime': 'text/plain'}, 
-    'ppt':  {'type': 'SAFE', 'mime': 'application/vnd.ms-powerpoint'},
-    'docx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}, 
-    'xlsx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}, 
-    'pptx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'},
-    'txt':  {'type': 'SAFE', 'mime': 'text/plain'} 
+    'doc':  {'type': 'SAFE', 'mime': 'application/msword', 'alt': ['application/octet-stream']},
+    'xls':  {'type': 'SAFE', 'mime': 'application/vnd.ms-excel', 'alt': ['application/octet-stream']},
+    'csv':  {'type': 'SAFE', 'mime': 'text/plain'},
+    'ppt':  {'type': 'SAFE', 'mime': 'application/vnd.ms-powerpoint', 'alt': ['application/octet-stream']},
+    'docx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'alt': ['application/zip']}, 
+    'xlsx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'alt': ['application/zip']}, 
+    'pptx': {'type': 'SAFE', 'mime': 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'alt': ['application/zip']},
+    'txt':  {'type': 'SAFE', 'mime': 'text/plain'},
+    
+    # Code files (detected as text/plain, which is fine)
+    'py':   {'type': 'SAFE', 'mime': 'text/plain'},
+    'html': {'type': 'SAFE', 'mime': 'text/html', 'alt': ['text/plain']},
+    'css':  {'type': 'SAFE', 'mime': 'text/css', 'alt': ['text/plain']},
+    'json': {'type': 'SAFE', 'mime': 'application/json', 'alt': ['text/plain']},
+    'xml':  {'type': 'SAFE', 'mime': 'text/xml', 'alt': ['text/plain']},
 }

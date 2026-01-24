@@ -1,5 +1,5 @@
 from typing import Optional
-import tldextract
+from app.utils.url_parser import extract_domain
 from app.models.domain import Email
 from app.models.risk import DetectorResult
 from app.detectors.base import BaseDetector
@@ -53,8 +53,8 @@ class HeaderAnalysisDetector(BaseDetector):
 
         # --- 2. Reply-To Mismatch ---
         if email.reply_to and email.sender_email:
-            sender_ext = tldextract.extract(email.sender_email)
-            reply_ext = tldextract.extract(email.reply_to)
+            sender_ext = extract_domain(email.sender_email)
+            reply_ext = extract_domain(email.reply_to)
             
             sender_domain = sender_ext.registered_domain.lower() if sender_ext.registered_domain else ""
             reply_domain = reply_ext.registered_domain.lower() if reply_ext.registered_domain else ""
@@ -67,8 +67,8 @@ class HeaderAnalysisDetector(BaseDetector):
 
         # --- 3. Return-Path Mismatch ---
         if email.return_path and email.sender_email:
-            sender_ext = tldextract.extract(email.sender_email)
-            return_ext = tldextract.extract(email.return_path)
+            sender_ext = extract_domain(email.sender_email)
+            return_ext = extract_domain(email.return_path)
             
             sender_domain = sender_ext.registered_domain.lower() if sender_ext.registered_domain else ""
             return_domain = return_ext.registered_domain.lower() if return_ext.registered_domain else ""

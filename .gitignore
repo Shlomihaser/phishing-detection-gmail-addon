@@ -1,10 +1,26 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Virtual Environments
 env/
 venv/
+
+# Environment Variables
 .env
 
+# IDEs
+.idea/
+.vscode/
+*.sublime-*
+*.swp
+
+# Data
 *.csv
+
+# OS
+.DS_Store
+Thumbs.db

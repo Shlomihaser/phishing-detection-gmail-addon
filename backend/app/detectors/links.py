@@ -1,5 +1,5 @@
 import ipaddress
-import tldextract
+from app.utils.url_parser import extract_domain
 
 from typing import Optional
 from app.models.domain import Email
@@ -22,7 +22,7 @@ class MaliciousLinkDetector(BaseDetector):
             reasons = []
             
             # --- 1. IP Address Check (Score: 40) ---
-            ext = tldextract.extract(url)            
+            ext = extract_domain(url)
             try:
                 # Remove protocol and get host
                 clean_url = url.replace('https://', '').replace('http://', '')
@@ -41,8 +41,8 @@ class MaliciousLinkDetector(BaseDetector):
             # --- 2. Link Masking / Mismatch (Score: 50) ---
             if text and URL_LIKE_PATTERN.search(text.strip()):
                 # Extract domain from the visible text
-                text_ext = tldextract.extract(text.strip())
-                url_ext = tldextract.extract(url)
+                text_ext = extract_domain(text.strip())
+                url_ext = extract_domain(url)
                 
                 # We compare registered_domain (e.g., 'google.com' from 'drive.google.com')
                 if text_ext.registered_domain and url_ext.registered_domain:
@@ -62,11 +62,6 @@ class MaliciousLinkDetector(BaseDetector):
             if ext.suffix.lower() in SUSPICIOUS_TLDS:
                 reasons.append(f"uses suspicious Top-Level Domain (.{(ext.suffix)})")
                 max_risk_score = max(max_risk_score, 20.0)
-
-            # --- 5. Insecure Protocol (Score: 15) ---
-            if url.lower().startswith("http://"):
-                reasons.append("insecure HTTP protocol")
-                max_risk_score = max(max_risk_score, 15.0)
 
             if reasons:
                 flagged_links[url] = reasons
