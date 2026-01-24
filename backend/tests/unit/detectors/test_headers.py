@@ -13,8 +13,7 @@ def test_headers_safe(email_builder):
         )
         .build()
     )
-    
-    # Parse & Detect
+
     email = EmailParser(mime).parse()
     detector = HeaderAnalysisDetector()
     result = detector.evaluate(email)
@@ -83,8 +82,7 @@ def test_reply_to_whitelist(email_builder):
     """Scenario: Mismatch allowed for mailing services (e.g. Amazon SES)."""
     mime = (
         email_builder.with_sender("newsletter@startups.com")
-        .with_header("Reply-To", "feedback@amazonses.com") 
-        # Note: amazonses.com should be in MAILING_SERVICE_DOMAINS whitelist
+        .with_header("Reply-To", "feedback@amazonses.com")
         .build()
     )
 
@@ -92,9 +90,6 @@ def test_reply_to_whitelist(email_builder):
     detector = HeaderAnalysisDetector()
     result = detector.evaluate(email)
 
-    # Should be None or unrelated to reply-to (if auth logic flags something else)
-    # Since we didn't add auth headers, it might flag missing auth (40.0). 
-    # But specifically, we check it does NOT flag Reply-To mismatch.
     if result:
         assert "Reply-To domain mismatch" not in result.description
 

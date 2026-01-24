@@ -71,7 +71,6 @@ class EmailParser:
         """Extract all URLs from the email body (plain text and HTML)."""
         links_map: Dict[str, Optional[str]] = {}
 
-        # 1. Extract from HTML (Rich extraction with anchor text)
         html_content = self._extract_body_html()
         if html_content:
             try:
@@ -85,14 +84,12 @@ class EmailParser:
                         links_map[clean_href] = text
             except Exception as e:
                 logger.warning(f"Error parsing HTML for URLs: {e}")
-                # Fallback to regex for HTML if BS4 fails
                 urls = URL_PATTERN.findall(html_content)
                 for url in urls:
                     clean_url = url.rstrip(".,;:!?")
                     if clean_url not in links_map:
                         links_map[clean_url] = None
 
-        # 2. Extract from Plain Text (Fallback / Supplemental)
         plain_text = self._extract_body_plain()
         if plain_text:
             text_urls = URL_PATTERN.findall(plain_text)
@@ -112,8 +109,6 @@ class EmailParser:
                 try:
                     raw_payload = att.get("payload")
                     content_bytes = self._payload_to_bytes(raw_payload)
-
-                    # Only keep first 2KB for magic number analysis
                     content_bytes = content_bytes[:2048] if content_bytes else None
 
                     attachment = Attachment(
@@ -138,12 +133,10 @@ class EmailParser:
             return raw_payload
 
         if isinstance(raw_payload, str):
-            # Try Base64 decode first (common in MIME attachments)
             try:
                 return base64.b64decode(raw_payload)
             except Exception as e:
                 logger.warning(f"Failed to decode Base64 payload: {e}. Falling back to UTF-8.")
-                # Fall back to UTF-8 encoding with error handling
                 return raw_payload.encode("utf-8", errors="surrogateescape")
 
         return b""

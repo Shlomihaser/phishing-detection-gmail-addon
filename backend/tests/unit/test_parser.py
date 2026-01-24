@@ -68,7 +68,6 @@ def test_extract_attachments(email_builder):
        into the builder -> Mime encodes it -> Parser decodes it.
        The result must match the original bytes exactly (critical for magic number detection).
     """
-    # Create fake binary content (e.g., a 4-byte executable header)
     fake_exe = b"\x4d\x5a\x90\x00"
 
     mime = email_builder.with_attachment("virus.exe", fake_exe).build()
@@ -79,5 +78,4 @@ def test_extract_attachments(email_builder):
     assert len(email.attachments) == 1
     att = email.attachments[0]
     assert att.filename == "virus.exe"
-    # Ensure content was correctly extracted (decoded from base64 internally)
     assert att.content_header == fake_exe

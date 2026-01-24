@@ -2,7 +2,6 @@ from app.detectors.attachments import HarmfulAttachmentDetector
 from app.models.domain import Email, Attachment, AuthHeaders
 import logging
 
-# Mute logger for tests
 logging.getLogger("app.detectors.attachments").setLevel(logging.ERROR)
 
 
@@ -69,7 +68,6 @@ def test_attachment_mime_spoofing():
         sender_name="Test",
         reply_to=None,
         urls=[],
-        # Claims to be TXT, actually is EXE
         attachments=[Attachment(filename="safe.txt", content_header=exe_header)],
         auth_results=AuthHeaders(),
         headers={},
@@ -78,6 +76,5 @@ def test_attachment_mime_spoofing():
     result = detector.evaluate(email)
 
     assert result is not None
-    # This is a critical mismatch (executable masquerading as text)
     assert result.score_impact == 75.0
     assert "does not match extension" in result.description

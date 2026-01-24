@@ -14,7 +14,6 @@ class MockEmailBuilder:
 
     def __init__(self):
         self.msg = MIMEMultipart()
-        # Default safe values
         self.msg["From"] = "alice@example.com"
         self.msg["To"] = "bob@example.com"
         self.msg["Subject"] = "Test Email"
@@ -49,16 +48,13 @@ class MockEmailBuilder:
         """Add an attachment to the email."""
         part = MIMEApplication(content)
         part.add_header("Content-Disposition", "attachment", filename=filename)
-        # Manually set content-type if needed
         if content_type:
-            part.set_param("name", filename)  # fallback
-            # We generally let MIMEApplication handle defaults or overwrite if tricky
+            part.set_param("name", filename)
         self.msg.attach(part)
         return self
 
     def build(self) -> str:
         """Finalize and return raw MIME string."""
-        # Attach bodies
         if self.body_html:
             self.msg.attach(MIMEText(self.body_plain, "plain"))
             self.msg.attach(MIMEText(self.body_html, "html"))

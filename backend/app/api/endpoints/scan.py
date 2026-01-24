@@ -17,17 +17,12 @@ def scan_email(
     ml_service: MLService = Depends(get_ml_service),
     scoring_service: ScoringService = Depends(get_scoring_service),
 ) -> ScanResponse:
-    # 1. Parse the raw MIME content into structured Email object
     email_parser = EmailParser(email_request.mime)
     parsed_email = email_parser.parse()
 
-    # 2. ML model analysis on text content
-    subject = parsed_email.subject or ''
-    body = parsed_email.body_plain or ''
-    text_content = f"{subject} {body}".strip()
+    text_content = _build_text_content(parsed_email)
     ml_result = ml_service.predict(text_content)
 
-    # 3. Run all detectors and combine with ML score
     risk_assessment = scoring_service.calculate_risk(
         parsed_email,
         ml_score=ml_result.confidence,
@@ -35,3 +30,9 @@ def scan_email(
     )
 
     return ScanResponse.from_results(risk=risk_assessment, ml=ml_result)
+
+
+def _build_text_content(email) -> str:
+    subject = email.subject or ""
+    body = email.body_plain or ""
+    return f"{subject} {body}".strip()

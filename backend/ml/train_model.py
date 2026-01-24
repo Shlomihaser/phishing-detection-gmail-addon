@@ -9,7 +9,6 @@ from sklearn.metrics import classification_report
 
 
 def train_phishing_model():
-    # File paths
     DATASET_PATH = os.path.join(os.path.dirname(__file__), "CEAS_08.csv")
     MODEL_DIR = os.path.dirname(__file__)
     MODEL_PATH = os.path.join(MODEL_DIR, "phishing_model.joblib")
@@ -23,26 +22,14 @@ def train_phishing_model():
         print(f"Error: Dataset not found at {DATASET_PATH}")
         return
 
-    # 1. Specific Data Selection
-    # Load the CSV and immediately drop all columns except subject, body, and label.
     required_columns = ["subject", "body", "label"]
 
-    # Check if columns exist
     if not all(col in df.columns for col in required_columns):
         print(f"Error: Dataset missing one of the required columns: {required_columns}")
         print(f"Found columns: {df.columns.tolist()}")
         return
 
     df = df[required_columns].copy()
-
-    # Ensure the label column is handled correctly: if it contains text (e.g., "spam"/"ham"), map it to 1 (Phishing) and 0 (Safe).
-    # Assuming standard 'spam' = 1 (phishing), 'ham' = 0 (safe) mapping.
-    # Adjust mapping based on actual content if needed. Converting to lowercase for safety.
-
-    # First, let's look at unique labels to be sure, but we will apply a robust mapping logic.
-    # We will assume:
-    # 1 (Phishing) -> 'spam', 'phishing', '1'
-    # 0 (Safe) -> 'ham', 'safe', '0', 'valid'
 
     def map_label(val):
         s = str(val).lower().strip()
@@ -51,11 +38,10 @@ def train_phishing_model():
         elif s in ["ham", "safe", "0", "valid"]:
             return 0
         else:
-            return None  # Handle unexpected labels later if needed
+            return None
 
     df["label"] = df["label"].apply(map_label)
 
-    # Drop rows where label interpretation failed
     if df["label"].isnull().any():
         print(
             f"Warning: {df['label'].isnull().sum()} rows have undefined labels and will be dropped."
@@ -64,37 +50,28 @@ def train_phishing_model():
 
     df["label"] = df["label"].astype(int)
 
-    # Handle missing values by replacing NaN with an empty string in the text columns.
     df["subject"] = df["subject"].fillna("")
     df["body"] = df["body"].fillna("")
 
     print(f"Data loaded and cleaned. Shape: {df.shape}")
     print(f"Class distribution:\n{df['label'].value_counts()}")
 
-    # 2. Text Synthesis
-    # Create a combined feature: X = df['subject'] + " " + df['body'].
     X = df["subject"] + " " + df["body"]
     y = df["label"]
 
-    # 3. Vectorization (TF-IDF)
     print("Vectorizing text data...")
-    # Initialize TfidfVectorizer(stop_words='english', max_features=5000, ngram_range=(1,2)).
     tfidf = TfidfVectorizer(stop_words="english", max_features=5000, ngram_range=(1, 2))
 
     X_tfidf = tfidf.fit_transform(X)
 
-    # 4. Training & Evaluation
-    # Split the data (80% train, 20% test).
     X_train, X_test, y_train, y_test = train_test_split(
         X_tfidf, y, test_size=0.2, random_state=42
     )
 
-    # Use MultinomialNB.
     print("Training Naive Bayes model...")
     nb_model = MultinomialNB()
     nb_model.fit(X_train, y_train)
 
-    # Print a detailed classification_report so I can see the Precision and Recall (crucial for phishing).
     print("Evaluating model...")
     y_pred = nb_model.predict(X_test)
     report = classification_report(
@@ -103,7 +80,6 @@ def train_phishing_model():
     print("\nClassification Report:\n")
     print(report)
 
-    # Use joblib to save the model and the vectorizer to backend/ml/.
     print(f"Saving model to {MODEL_PATH}...")
     joblib.dump(nb_model, MODEL_PATH)
 

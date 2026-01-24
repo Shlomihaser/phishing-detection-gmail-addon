@@ -10,7 +10,6 @@ def test_scoring_critical_override():
                BUT ML says it's perfectly safe (0.0).
     Goal: Verify that the final score is forced to 100. The heuristic MUST override the ML.
     """
-    # Mock a detector that screams "DANGER"
     mock_detector = MagicMock()
     mock_detector.evaluate.return_value = DetectorResult(
         detector_name="Critical", score_impact=100.0, description="Virus Found"
@@ -18,7 +17,6 @@ def test_scoring_critical_override():
 
     service = ScoringService(detectors=[mock_detector])
 
-    # ML says "Safe" (0.0)
     risk = service.calculate_risk(MagicMock(), ml_score=0.0, ml_is_phishing=False)
 
     assert risk.score == 100.0
@@ -39,10 +37,8 @@ def test_scoring_weighted_average():
 
     service = ScoringService(detectors=[mock_detector])
 
-    # ML Score 0.5 (50%)
     risk = service.calculate_risk(MagicMock(), ml_score=0.5, ml_is_phishing=True)
 
-    # Expected: 50.0 total
     assert risk.score == 50.0
     assert risk.level == RiskLevel.SUSPICIOUS
 
@@ -54,12 +50,8 @@ def test_scoring_ml_boost():
     Goal: Verify that the score is boosted to at least SUSPICIOUS (50.0),
           instead of being just 40.0 (0*0.6 + 100*0.4).
     """
-    # No heuristic triggers
     service = ScoringService(detectors=[])
-
-    # ML is 99% sure it's phishing
     risk = service.calculate_risk(MagicMock(), ml_score=0.99, ml_is_phishing=True)
 
-    # Without boost, it would be 39.6. With boost, it should be >= 50.0
     assert risk.score >= RiskThresholds.ML_BOOST_MINIMUM
     assert "AI Model detected" in risk.reasons[0]

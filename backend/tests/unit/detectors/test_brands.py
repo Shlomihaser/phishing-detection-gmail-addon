@@ -34,7 +34,7 @@ def test_brand_typosquatting_domain():
     """
     detector = BrandProtectionDetector()
     email = Email(
-        sender_email="admin@micosoft.com",  # Typo: micosoft vs microsoft
+        sender_email="admin@micosoft.com",
         sender_name="Admin",
         reply_to=None,
         urls=[],
@@ -67,4 +67,4 @@ def test_brand_legitimate_pass():
     )
 
     result = detector.evaluate(email)
-    assert result is None  # Should pass safely
+    assert result is None
