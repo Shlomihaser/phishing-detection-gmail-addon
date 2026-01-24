@@ -103,6 +103,27 @@ docker-compose up --build
 
 ### Local Development
 
+#### 1. System Dependencies (Important)
+This project uses `python-magic` for file type detection, which requires the underlying C-library `libmagic` to be installed on your operating system.
+
+**For Windows Users:**
+The easiest way is to install the binary package which includes the DLLs (included in requirements.txt, but good to know):
+```bash
+pip install python-magic-bin
+```
+
+**For macOS Users:**
+You must install `libmagic` via Homebrew before installing Python requirements:
+```bash
+brew install libmagic
+```
+
+**For Linux Users:**
+```bash
+sudo apt-get install libmagic1
+```
+
+#### 2. Service Setup
 ```bash
 # Navigate to backend
 cd backend
