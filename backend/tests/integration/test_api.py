@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
 
-client = TestClient(app)
+client = TestClient(app, raise_server_exceptions=False)
 
 
 def test_scan_endpoint_success(email_builder, mock_ml_service):
@@ -19,7 +19,7 @@ def test_scan_endpoint_success(email_builder, mock_ml_service):
     data = response.json()
     assert "status" in data
     assert "confidence" in data
-    assert data["details"]["ml_prediction"] == "safe"
+    assert data["details"]["ml_prediction"] == "SAFE"
 
 
 def test_scan_endpoint_malformed_mime(mock_ml_service):

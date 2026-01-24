@@ -52,9 +52,8 @@ class EmailParser:
         return None
 
     def _extract_reply_to(self) -> Optional[str]:
-        reply_to = self.mail.headers.get("Reply-To")
-        if reply_to:
-            _, email = parseaddr(reply_to)
+        if self.mail.reply_to and len(self.mail.reply_to) > 0:
+            email = self.mail.reply_to[0][1]
             return email
         return None
 

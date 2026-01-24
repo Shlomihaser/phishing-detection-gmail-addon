@@ -29,7 +29,8 @@ def mock_ml_service():
     This ensures the app uses our mock instead of the real heavy service.
     """
     mock_instance = MagicMock()
-    mock_instance.predict.return_value = {"is_phishing": False, "confidence": 0.1}
+    from app.models.risk import MLPrediction
+    mock_instance.predict.return_value = MLPrediction(is_phishing=False, confidence=0.1)
 
     # Override the dependency
     app.dependency_overrides[get_ml_service] = lambda: mock_instance
