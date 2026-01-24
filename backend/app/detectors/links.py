@@ -10,6 +10,8 @@ from app.constants.links import SUSPICIOUS_TLDS, SHORTENER_DOMAINS
 from app.constants.regex import URL_LIKE_PATTERN
 
 
+from app.constants.scoring import LinkScores
+
 @DetectorRegistry.register
 class MaliciousLinkDetector(BaseDetector):
     def evaluate(self, email: Email) -> Optional[DetectorResult]:
@@ -33,7 +35,7 @@ class MaliciousLinkDetector(BaseDetector):
                 # This catches: IPv4, IPv6, Hex IPs, Decimal IPs, Octal IPs
                 ip = ipaddress.ip_address(host)
                 reasons.append(f"destination is a raw IP address ({ip})")
-                max_risk_score = max(max_risk_score, 40.0)
+                max_risk_score = max(max_risk_score, LinkScores.IP_ADDRESS)
             except ValueError:
                 # Not an IP address - this is normal/expected for domain names
                 pass
@@ -57,19 +59,19 @@ class MaliciousLinkDetector(BaseDetector):
                         reasons.append(
                             f"link masking detected (text says '{text_ext.top_domain_under_public_suffix}' but goes to '{url_ext.top_domain_under_public_suffix}')"
                         )
-                        max_risk_score = max(max_risk_score, 50.0)
+                        max_risk_score = max(max_risk_score, LinkScores.LINK_MASKING)
 
             # --- 3. URL Shorteners (Score: 25) ---
             # domain + suffix check (e.g. bit.ly)
             full_domain = f"{ext.domain}.{ext.suffix}".lower()
             if full_domain in SHORTENER_DOMAINS:
                 reasons.append(f"hidden behind URL shortener ({full_domain})")
-                max_risk_score = max(max_risk_score, 25.0)
+                max_risk_score = max(max_risk_score, LinkScores.URL_SHORTENER)
 
             # --- 4. Suspicious TLDs (Score: 20) ---
             if ext.suffix.lower() in SUSPICIOUS_TLDS:
                 reasons.append(f"uses suspicious Top-Level Domain (.{(ext.suffix)})")
-                max_risk_score = max(max_risk_score, 20.0)
+                max_risk_score = max(max_risk_score, LinkScores.SUSPICIOUS_TLD)
 
             if reasons:
                 flagged_links[url] = reasons

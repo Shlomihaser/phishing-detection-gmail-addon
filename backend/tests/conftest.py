@@ -1,7 +1,7 @@
 import pytest
 import logging
 from unittest.mock import MagicMock
-from .factories import MockEmailBuilder
+from tests.factories import MockEmailBuilder
 
 # Disable logging noise during tests
 logging.getLogger("faker").setLevel(logging.ERROR)

@@ -2,6 +2,8 @@ import os
 import logging
 import joblib
 
+from app.models.risk import MLPrediction
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,10 +33,10 @@ class MLService:
             self._model = None
             self._vectorizer = None
 
-    def predict(self, text: str) -> dict:
+    def predict(self, text: str) -> MLPrediction:
         if not self._model or not self._vectorizer:
             logger.warning("ML Model not loaded, returning default safe.")
-            return {"is_phishing": False, "confidence": 0.0}
+            return MLPrediction(is_phishing=False, confidence=0.0)
 
         try:
             features = self._vectorizer.transform([text])
@@ -42,10 +44,10 @@ class MLService:
             probabilities = self._model.predict_proba(features)[0]
             phishing_prob = probabilities[1]
 
-            return {
-                "is_phishing": bool(prediction == 1),
-                "confidence": float(phishing_prob),
-            }
+            return MLPrediction(
+                is_phishing=bool(prediction == 1),
+                confidence=float(phishing_prob),
+            )
         except Exception as e:
             logger.error(f"Error during ML prediction: {e}")
-            return {"is_phishing": False, "confidence": 0.0}
+            return MLPrediction(is_phishing=False, confidence=0.0)

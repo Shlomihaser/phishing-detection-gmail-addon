@@ -1,14 +1,15 @@
-import mailparser
-import authres
 import base64
 import logging
+from email.utils import parseaddr
+from typing import Dict, List, Optional
 
-from app.models.domain import Email, AuthHeaders, Link, Attachment
+import authres
+import mailparser
+from bs4 import BeautifulSoup
+
 from app.constants.regex import URL_PATTERN
 from app.exceptions import EmailParsingError
-from typing import List, Dict, Optional
-from email.utils import parseaddr
-from bs4 import BeautifulSoup
+from app.models.domain import Attachment, AuthHeaders, Email, Link
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,8 @@ class EmailParser:
             # Try Base64 decode first (common in MIME attachments)
             try:
                 return base64.b64decode(raw_payload)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to decode Base64 payload: {e}. Falling back to UTF-8.")
                 # Fall back to UTF-8 encoding with error handling
                 return raw_payload.encode("utf-8", errors="surrogateescape")
 
@@ -178,8 +180,8 @@ class EmailParser:
                         dkim = status
                     elif method == "dmarc" and dmarc is None:
                         dmarc = status
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse Authentication-Results header: {e}")
 
         return AuthHeaders(spf=spf, dkim=dkim, dmarc=dmarc)
 

@@ -20,3 +20,8 @@ class RiskAssessment(BaseModel):
     level: RiskLevel
     reasons: List[str]
     details: List[DetectorResult]
+
+
+class MLPrediction(BaseModel):
+    is_phishing: bool
+    confidence: float

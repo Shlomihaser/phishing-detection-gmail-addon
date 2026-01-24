@@ -1,45 +1,17 @@
 import logging
 from typing import List
 
-logger = logging.getLogger(__name__)
-from ..models.domain import Email
-from ..models.risk import RiskAssessment, RiskLevel
-
+from app.models.domain import Email
+from app.models.risk import RiskAssessment, RiskLevel
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
+from app.constants.scoring import RiskThresholds
 
-
-# Risk Scoring Thresholds
-class RiskThresholds:
-    """Named constants for risk scoring - avoid magic numbers."""
-
-    CRITICAL_IMPACT = 80.0  # Score that triggers critical override
-    DANGEROUS_LEVEL = 70.0  # >= this score = DANGEROUS
-    SUSPICIOUS_LEVEL = 30.0  # >= this score = SUSPICIOUS, < DANGEROUS
-
-    # Weighting
-    DETECTOR_WEIGHT = 0.6  # 60% weight for heuristic detectors
-    ML_WEIGHT = 0.4  # 40% weight for ML model
-
-    # ML Override thresholds
-    ML_HIGH_CONFIDENCE = 0.85  # 85% ML confidence triggers boost
-    ML_BOOST_MINIMUM = 50.0  # Minimum score when ML is confident
-
+logger = logging.getLogger(__name__)
 
 class ScoringService:
-    def __init__(self, detectors: List[BaseDetector] = None):
-        """
-        Initialize the service with a specific set of detectors.
-
-        Args:
-            detectors: Optional list of detectors. If None, uses all
-                      registered detectors from DetectorRegistry.
-                      Pass a custom list for testing purposes.
-        """
-        if detectors is not None:
-            self.detectors = detectors
-        else:
-            self.detectors = DetectorRegistry.get_all_detectors()
+    def __init__(self, detectors: List[BaseDetector] | None = None):
+        self.detectors = detectors or DetectorRegistry.get_all_detectors()
 
     def calculate_risk(
         self, email: Email, ml_score: float = 0.0, ml_is_phishing: bool = False

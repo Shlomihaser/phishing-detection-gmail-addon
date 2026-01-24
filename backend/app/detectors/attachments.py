@@ -10,6 +10,8 @@ from app.models.domain import Email
 from app.models.risk import DetectorResult
 from app.constants.file_defs import FILE_DEFINITIONS
 
+from app.constants.scoring import AttachmentScores
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +57,7 @@ class HarmfulAttachmentDetector(BaseDetector):
                     reasons.append(
                         f"hidden executable content detected ({detected_mime})"
                     )
-                    max_risk_score = max(max_risk_score, 100.0)
+                    max_risk_score = max(max_risk_score, AttachmentScores.HIDDEN_EXECUTABLE)
 
             if attachment.filename:
                 # --- Named Attachment Checks ---
@@ -63,14 +65,14 @@ class HarmfulAttachmentDetector(BaseDetector):
                 # Check 1: Is it explicitly Dangerous?
                 if file_def and file_def["type"] == "DANGEROUS":
                     reasons.append(f"malicious file type ({ext})")
-                    max_risk_score = max(max_risk_score, 100.0)
+                    max_risk_score = max(max_risk_score, AttachmentScores.MALICIOUS_FILE)
 
                 # Check 2: Missing Extension (but allow if it's a safe content type like image)
                 if not ext:
                     # Don't flag inline images/text that just have auto-generated names
                     if not detected_mime.startswith(("image/", "text/")):
                         reasons.append("missing file extension")
-                        max_risk_score = max(max_risk_score, 25.0)
+                        max_risk_score = max(max_risk_score, AttachmentScores.MISSING_EXTENSION)
 
                 # Check 3: Double Extension Trick
                 fake_def = FILE_DEFINITIONS.get(fake_ext)
@@ -79,7 +81,7 @@ class HarmfulAttachmentDetector(BaseDetector):
                         reasons.append(
                             f"deceptive double extension (.{fake_ext}.{ext})"
                         )
-                        max_risk_score = max(max_risk_score, 100.0)
+                        max_risk_score = max(max_risk_score, AttachmentScores.DOUBLE_EXTENSION)
 
                 # Check 4: Content Spoofing (MIME Mismatch)
                 if file_def and file_def.get("mime"):
@@ -88,19 +90,19 @@ class HarmfulAttachmentDetector(BaseDetector):
                     if not self._is_mime_match_valid(detected_mime, expected_mime, ext):
                         # Hidden executable is critical
                         if is_executable:
-                            max_risk_score = max(max_risk_score, 100.0)
+                            max_risk_score = max(max_risk_score, AttachmentScores.HIDDEN_EXECUTABLE)
                         else:
                             reasons.append(
                                 f"file content ({detected_mime}) does not match extension (expected {expected_mime})"
                             )
-                            max_risk_score = max(max_risk_score, 75.0)
+                            max_risk_score = max(max_risk_score, AttachmentScores.MIME_MISMATCH)
 
             else:
                 # --- Unnamed Attachment Checks ---
                 # Logic Update: Only flag if it's NOT an image/text (likely inline signature)
                 if not detected_mime.startswith(("image/", "text/")):
                     reasons.append("unnamed suspicious attachment")
-                    max_risk_score = max(max_risk_score, 30.0)
+                    max_risk_score = max(max_risk_score, AttachmentScores.UNNAMED_SUSPICIOUS)
                 else:
                     # Ignore safe unnamed images (logos/sig)
                     continue
