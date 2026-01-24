@@ -16,6 +16,9 @@ function handleScanButtonClick(e) {
     var mime = {"mime": message.getRawContent()};
     
     // 3. Send to Backend
+    var apiUrl = CONFIG.API_URL;
+    console.log("Calling API URL: " + apiUrl);  // Debug log
+    
     var options = {
       "method": "post",
       "contentType": "application/json",
@@ -23,7 +26,7 @@ function handleScanButtonClick(e) {
       "muteHttpExceptions": true
     };
 
-    var response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+    var response = UrlFetchApp.fetch(apiUrl, options);
     if (response.getResponseCode() !== 200)
       throw new Error("Backend returned status " + response.getResponseCode());
 

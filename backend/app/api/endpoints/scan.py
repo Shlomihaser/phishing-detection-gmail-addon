@@ -8,7 +8,6 @@ from app.api.dependencies import get_ml_service, get_scoring_service
 
 router = APIRouter()
 
-
 @router.post("/scan", response_model=ScanResponse)
 async def scan_email(
     email_request: EmailRequest,
