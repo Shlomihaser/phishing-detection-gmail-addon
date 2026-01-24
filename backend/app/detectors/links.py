@@ -1,53 +1,85 @@
-import re
+import ipaddress
+import tldextract
+
 from typing import Optional
 from app.models.domain import Email
 from app.models.risk import DetectorResult
 from app.detectors.base import BaseDetector
+from app.detectors.registry import DetectorRegistry
+from app.constants.links import SUSPICIOUS_TLDS, SHORTENER_DOMAINS
+from app.constants.regex import URL_LIKE_PATTERN
 
-class SuspiciousLinkDetector(BaseDetector):
-    def __init__(self):
-        # Common URL shorteners used to hide destinations
-        self.shorteners = {
-            "bit.ly", "goo.gl", "tinyurl.com", "ow.ly", "t.co", 
-            "is.gd", "buff.ly", "adf.ly", "bit.do", "mcaf.ee", "tr.im"
-        }
 
+@DetectorRegistry.register
+class MaliciousLinkDetector(BaseDetector):
     def evaluate(self, email: Email) -> Optional[DetectorResult]:
-        suspicious_count = 0
-        reasons = []
-
-        # Regex patterns for raw IPs and obfuscation
-        # IPv4: 192.168.1.1
-        ipv4_pattern = r'https?://(?:\d{1,3}\.){3}\d{1,3}'
-        # IPv6: [2001:db8::1] - Basic check for bracketed IPv6 in URL
-        ipv6_pattern = r'https?://\[[a-fA-F0-9:]+\]' 
-        # Hex/Octal: 0x7f000001 or 0177.0.0.1 (leading zeros check is complex, focusing on 0x)
-        hex_ip_pattern = r'https?://0x[a-fA-F0-9]+'
+        flagged_links = {}
+        max_risk_score = 0.0
         
         for link in email.urls:
-            url = link.url  # Access the url string from the Link object
-            url_lower = url.lower()
+            url = link.url
+            text = link.text
+            reasons = []
             
-            # Check 1: Raw IP or Obfuscated IP
-            if (re.search(ipv4_pattern, url) or 
-                re.search(ipv6_pattern, url) or 
-                re.search(hex_ip_pattern, url_lower)):
-                suspicious_count += 1
-                reasons.append(f"IP/Obfuscated URL: {url}")
-                continue
+            # --- 1. IP Address Check (Score: 40) ---
+            ext = tldextract.extract(url)            
+            try:
+                # Remove protocol and get host
+                clean_url = url.replace('https://', '').replace('http://', '')
+                host = clean_url.split('/')[0].split(':')[0]
+                
+                # Remove brackets for IPv6 (e.g., [::1])
+                host = host.strip('[]')
+                # This catches: IPv4, IPv6, Hex IPs, Decimal IPs, Octal IPs
+                ip = ipaddress.ip_address(host)
+                reasons.append(f"destination is a raw IP address ({ip})")
+                max_risk_score = max(max_risk_score, 40.0)
+            except ValueError:
+                # Not an IP address - this is normal/expected for domain names
+                pass
 
-            # Check 2: URL Shorteners
-            domain_part = url_lower.split("://")[-1].split("/")[0]
-            domain = domain_part.split(":")[0]
+            # --- 2. Link Masking / Mismatch (Score: 50) ---
+            if text and URL_LIKE_PATTERN.search(text.strip()):
+                # Extract domain from the visible text
+                text_ext = tldextract.extract(text.strip())
+                url_ext = tldextract.extract(url)
+                
+                # We compare registered_domain (e.g., 'google.com' from 'drive.google.com')
+                if text_ext.registered_domain and url_ext.registered_domain:
+                    # If domains differ, it's a mismatch
+                    if text_ext.registered_domain.lower() != url_ext.registered_domain.lower():
+                        reasons.append(f"link masking detected (text says '{text_ext.registered_domain}' but goes to '{url_ext.registered_domain}')")
+                        max_risk_score = max(max_risk_score, 50.0)
             
-            if domain in self.shorteners:
-                suspicious_count += 1
-                reasons.append(f"URL Shortener: {url}")
+            # --- 3. URL Shorteners (Score: 25) ---
+            # domain + suffix check (e.g. bit.ly)
+            full_domain = f"{ext.domain}.{ext.suffix}".lower()
+            if full_domain in SHORTENER_DOMAINS:
+                reasons.append(f"hidden behind URL shortener ({full_domain})")
+                max_risk_score = max(max_risk_score, 25.0)
+
+            # --- 4. Suspicious TLDs (Score: 20) ---
+            if ext.suffix.lower() in SUSPICIOUS_TLDS:
+                reasons.append(f"uses suspicious Top-Level Domain (.{(ext.suffix)})")
+                max_risk_score = max(max_risk_score, 20.0)
+
+            # --- 5. Insecure Protocol (Score: 15) ---
+            if url.lower().startswith("http://"):
+                reasons.append("insecure HTTP protocol")
+                max_risk_score = max(max_risk_score, 15.0)
+
+            if reasons:
+                flagged_links[url] = reasons
+
+        if not flagged_links:
+            return None
             
-        if suspicious_count > 0:
-             return DetectorResult(
-                detector_name="Suspicious Links",
-                score_impact=20.0 * suspicious_count,
-                description=f"Found {suspicious_count} suspicious link(s): {', '.join(reasons[:3])}"
-            )
-        return None
+        issue_details = []
+        for url, issues in flagged_links.items():
+            issue_details.append(f"Link '{url}': {', '.join(issues)}")
+
+        return DetectorResult(
+            detector_name="Malicious Link Detector",
+            score_impact=max_risk_score,
+            description="Suspicious links detected: " + "; ".join(issue_details)
+        )

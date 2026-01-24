@@ -1,142 +1,176 @@
-import re
 import mailparser
-from typing import List, Dict
-from datetime import datetime
+import authres
+
+from app.models.domain import Email, AuthHeaders, Link, Attachment
+from app.constants.regex import URL_PATTERN
+from typing import List, Dict, Optional
 from email.utils import parseaddr
-from app.models.domain import Email, AuthHeaders, Link
-from app.models.email_request import EmailRequest
+from bs4 import BeautifulSoup
 
 class EmailParser:
-    """
-    Parses raw email content using `mail-parser` to extract structured data 
-    (headers, body, URLs, authentication status) for phishing analysis.
-    """
-    def __init__(self, email_request: EmailRequest):
-        self.email_request = email_request
-        # mail-parser handles complex decoding and multipart splitting automatically
-        self.mail = mailparser.parse_from_string(email_request.rawContent)
-
+    def __init__(self, mime_content: str):
+        self.mail = mailparser.parse_from_string(mime_content)
+    
     def parse(self) -> Email:
-        """
-        Main execution pipeline.
-        Returns a populated Email object with normalized data.
-        """
-        auth_headers = self._extract_auth_headers()
-        sender_name, sender_email = parseaddr(self.email_request.sender)
-        
-        try:
-            creation_date = datetime.fromisoformat(self.email_request.date.replace("Z", "+00:00"))
-        except ValueError:
-            creation_date = None
-
-        text_content = "\n".join(self.mail.text_plain) if self.mail.text_plain else self.mail.body or ""
-        html_content = "\n".join(self.mail.text_html) if self.mail.text_html else ""
-
         return Email(
-            message_id=self.email_request.messageId,
-            sender_name=sender_name,
-            sender_email=sender_email,
-            reply_to=self._get_reply_to_address(),
-            subject=self.email_request.subject,
-            creation_date=creation_date,
-            body_text=text_content, 
-            urls=self._extract_urls(text_content, html_content),
-            email_addresses=self._extract_emails(text_content),
-            auth_results=auth_headers,
-            headers=self._get_important_headers()
+            sender_name=self._extract_sender_name(),
+            sender_email=self._extract_sender_email(),
+            reply_to=self._extract_reply_to(),
+            subject=self.mail.subject,
+            body_plain=self._extract_body_plain(),
+            body_html=self._extract_body_html(),
+            urls=self._extract_urls(),
+            attachments=self._extract_attachments(),
+            auth_results=self._extract_auth_results(),
+            headers=self._extract_headers(),
+            return_path=self._extract_header('Return-Path'),
+            x_mailer=self._extract_header('X-Mailer'),
+            message_id=self._extract_header('Message-ID')
         )
+    
+    
+    def _extract_sender_name(self) -> Optional[str]:
+        if self.mail.from_ and len(self.mail.from_) > 0:
+            name = self.mail.from_[0][0]
+            return name
+        return None
+    
+    def _extract_sender_email(self) -> str:
+        if self.mail.from_ and len(self.mail.from_) > 0:
+            email = self.mail.from_[0][1]
+            return email
+        return None
+    
+    def _extract_reply_to(self) -> Optional[str]:
+        reply_to = self.mail.headers.get('Reply-To')
+        if reply_to:
+            _, email = parseaddr(reply_to)
+            return email
+        return None
+    
+    def _extract_body_plain(self) -> Optional[str]:
+        if self.mail.text_plain:
+            return '\n'.join(self.mail.text_plain)
+        return None
 
-    def _get_reply_to_address(self) -> str | None:
-        """
-        Safely extracts the Reply-To address.
-        mail-parser often returns this as a list of tuples: [('Name', 'email@domain.com')]
-        """
-        reply_to = self.mail.headers.get("Reply-To")
+    def _extract_body_html(self) -> Optional[str]:
+        if self.mail.text_html:
+            return '\n'.join(self.mail.text_html)
+        return None
+    
+    def _extract_urls(self) -> List[Link]:
+        """Extract all URLs from the email body (plain text and HTML)."""
+        links_map: Dict[str, Optional[str]] = {}
         
-        if not reply_to:
-            return None
-            
-        # Handle list case (e.g. [('Name', 'email')] or ['email'])
-        if isinstance(reply_to, list):
-            if not reply_to:
-                return None
-            first_item = reply_to[0]
-            if isinstance(first_item, tuple):
-                # Return the email part (2nd element)
-                return first_item[1]
-            return str(first_item)
-            
-        return str(reply_to)
+        # 1. Extract from HTML (Rich extraction with anchor text)
+        html_content = self._extract_body_html()
+        if html_content:
+            try:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                for a_tag in soup.find_all('a', href=True):
+                    href = a_tag['href'].strip()
+                    text = a_tag.get_text(separator=' ', strip=True) or None
+                    
+                    if href.startswith(('http://', 'https://')):
+                        clean_href = href.rstrip('.,;:!?')
+                        links_map[clean_href] = text
+            except Exception as e:
+                print(f"Error parsing HTML for URLs: {e}")
+                # Fallback to regex for HTML if BS4 fails
+                urls = URL_PATTERN.findall(html_content)
+                for url in urls:
+                    clean_url = url.rstrip('.,;:!?')
+                    if clean_url not in links_map:
+                        links_map[clean_url] = None
 
-    def _extract_auth_headers(self) -> AuthHeaders:
+        # 2. Extract from Plain Text (Fallback / Supplemental)
+        plain_text = self._extract_body_plain()
+        if plain_text:
+            text_urls = URL_PATTERN.findall(plain_text)
+            for url in text_urls:
+                clean_url = url.rstrip('.,;:!?')
+                if clean_url not in links_map:
+                    links_map[clean_url] = None
+        
+        return [Link(url=url, text=text) for url, text in links_map.items()]
+
+
+
+    def _extract_attachments(self) -> List[Attachment]:
+        """Extract attachment metadata."""
+        attachments = []
+        
+        if self.mail.attachments:
+            for att in self.mail.attachments:
+                try:
+                    raw_payload = att.get('payload')
+                    if isinstance(raw_payload, str):
+                        content_bytes = raw_payload.encode('utf-8')
+                    else:
+                        content_bytes = raw_payload or b''
+
+                    content_bytes = content_bytes[:2048]
+                    
+                    attachment = Attachment(
+                        filename=att.get('filename'),
+                        content_header=content_bytes if content_bytes else None
+                    )
+                    attachments.append(attachment)
+                except Exception:
+                    continue
+    
+        return attachments
+
+    def _extract_auth_results(self) -> AuthHeaders:
         """
-        Parses `Authentication-Results` to check for SPF/DKIM/DMARC passes.
+        Extract SPF, DKIM, and DMARC results using the authres library.
         """
-        # Lowercase to handle case-insensitive "PASS" or "pass" values
-        auth_results = self.mail.headers.get("Authentication-Results", "").lower()
-        spf = dkim = dmarc = None
-
-        if auth_results:
-            if "spf=pass" in auth_results: spf = "pass"
-            elif "spf=fail" in auth_results: spf = "fail"
-            
-            if "dkim=pass" in auth_results: dkim = "pass"
-            elif "dkim=fail" in auth_results: dkim = "fail"
-            
-            if "dmarc=pass" in auth_results: dmarc = "pass"
-            elif "dmarc=fail" in auth_results: dmarc = "fail"
-
-        if not spf:
-            rec_spf = self.mail.headers.get("Received-SPF", "").lower()
-            if "pass" in rec_spf: spf = "pass"
-            elif "fail" in rec_spf: spf = "fail"
+        auth_header_raw = self.mail.headers.get('Authentication-Results')
+    
+        auth_header = ''
+        if isinstance(auth_header_raw, list) and auth_header_raw:
+            auth_header = str(auth_header_raw[0])
+        elif isinstance(auth_header_raw, str):
+            auth_header = auth_header_raw
+        
+        spf = None
+        dkim = None
+        dmarc = None
+        
+        if auth_header:
+            try:
+                parsed = authres.AuthenticationResultsHeader.parse(f"Authentication-Results: {auth_header}")
+                for result in parsed.results:
+                    method = result.method.lower()
+                    status = result.result.lower() if result.result else None
+                    
+                    if method == 'spf' and spf is None:
+                        spf = status
+                    elif method == 'dkim' and dkim is None:
+                        dkim = status
+                    elif method == 'dmarc' and dmarc is None:
+                        dmarc = status
+            except Exception:
+                pass
         
         return AuthHeaders(spf=spf, dkim=dkim, dmarc=dmarc)
-
-    def _extract_urls(self, text: str, html: str) -> List[Link]:
-        """
-        Extracts URLs from both plain text and HTML.
-        Returns a list of Link objects (containing url and visible text).
-        """
-        links = []
-        seen_urls = set()
-
-        # 1. HTML Links (Best source for text)
-        # Regex to capture <a ... href="...">TEXT</a>
-        # This is a basic heuristic regex. Ideally use BS4 if accuracy is critical.
-        # Capture group 1: URL, Capture group 2: Visible Text
-        html_link_pattern = r'<a\s+(?:[^>]*?\s+)?href=["\'](.*?)["\'][^>]*>(.*?)</a>'
-        for match in re.finditer(html_link_pattern, html, re.IGNORECASE | re.DOTALL):
-            url = match.group(1).strip()
-            text_content = match.group(2).strip()
-            # Clean HTML tags from text (e.g. bold tags inside link)
-            clean_text = re.sub(r'<[^>]+>', '', text_content).strip()
-            
-            if url:
-                links.append(Link(url=url, text=clean_text))
-                seen_urls.add(url)
-
-        # 2. Plain Text / Remaining Links (No specific text)
-        text_url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*[^.,;!?)\]\s]'
+ 
+    def _extract_headers(self) -> Dict[str, str]:
+        headers_dict = {}
         
-        # Combine text and remaining HTML hrefs
-        all_text_matches = re.findall(text_url_pattern, text)
-        href_pattern = r'href=[\'"]?(https?://[^\'" >]+)' 
-        all_href_matches = re.findall(href_pattern, html)
+        if self.mail.headers:
+            for key, value in self.mail.headers.items():
+                if isinstance(value, list):
+                    headers_dict[key] = '; '.join(str(v) for v in value)
+                else:
+                    headers_dict[key] = str(value) if value else ''
         
-        for url in all_text_matches + all_href_matches:
-            clean_url = url.strip('.,;!?) \n\r')
-            if clean_url not in seen_urls:
-                links.append(Link(url=clean_url, text=None))
-                seen_urls.add(clean_url)
-                
-        return links
-
-    def _extract_emails(self, text: str) -> List[str]:
-        email_pattern = r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b'
-        emails = re.findall(email_pattern, text)
-        return list(set(emails))
-
-    def _get_important_headers(self) -> Dict[str, str]:
-        keys = ["Subject", "Received", "X-Mailer", "Return-Path", "Content-Type"]
-        return {k: str(self.mail.headers.get(k, "")) for k in keys if k in self.mail.headers}
+        return headers_dict
+    
+    def _extract_header(self, key: str) -> Optional[str]:
+        """Helper to extract a simple string header."""
+        val = self.mail.headers.get(key)
+        if isinstance(val, list) and val:
+            return str(val[0])
+        return str(val) if val else None
+    
