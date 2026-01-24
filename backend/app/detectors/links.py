@@ -45,10 +45,10 @@ class MaliciousLinkDetector(BaseDetector):
                 url_ext = extract_domain(url)
                 
                 # We compare registered_domain (e.g., 'google.com' from 'drive.google.com')
-                if text_ext.registered_domain and url_ext.registered_domain:
+                if text_ext.top_domain_under_public_suffix and url_ext.top_domain_under_public_suffix:
                     # If domains differ, it's a mismatch
-                    if text_ext.registered_domain.lower() != url_ext.registered_domain.lower():
-                        reasons.append(f"link masking detected (text says '{text_ext.registered_domain}' but goes to '{url_ext.registered_domain}')")
+                    if text_ext.top_domain_under_public_suffix.lower() != url_ext.top_domain_under_public_suffix.lower():
+                        reasons.append(f"link masking detected (text says '{text_ext.top_domain_under_public_suffix}' but goes to '{url_ext.top_domain_under_public_suffix}')")
                         max_risk_score = max(max_risk_score, 50.0)
             
             # --- 3. URL Shorteners (Score: 25) ---

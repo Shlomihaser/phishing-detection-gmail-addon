@@ -14,6 +14,6 @@ _COMMON_TLDS = r'(?:com|org|net|edu|gov|io|co|app|dev|info|biz|us|uk|de|fr|ru|cn
 # - Starts with www.
 # - Has domain + common TLD format (e.g., google.com, evil.ru)
 URL_LIKE_PATTERN = re.compile(
-    rf'^(?:https?://|www\.)[^\s]+|^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.{_COMMON_TLDS}(?:[:/]|$)',
+    rf'(?:https?://|www\.)[^\s]+|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.{_COMMON_TLDS}(?:[:/]|$)',
     re.IGNORECASE
 )

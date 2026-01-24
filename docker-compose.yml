@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: phishing-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the app code for hot-reloading during development
+      # Any change you make in backend/app will reflect instantly in the container
+      - ./backend/app:/app/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
