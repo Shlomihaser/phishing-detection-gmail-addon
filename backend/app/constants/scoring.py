@@ -27,7 +27,6 @@ class AttachmentScores:
 
 class LinkScores:
     """Scores for link-related risks."""
-
     IP_ADDRESS = 40.0  # Direct IP usage
     LINK_MASKING = 50.0  # Text != Href
     URL_SHORTENER = 25.0  # bit.ly, etc.

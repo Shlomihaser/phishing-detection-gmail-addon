@@ -8,8 +8,7 @@ from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
 from app.models.domain import Email
 from app.models.risk import DetectorResult
-from app.constants.file_defs import FILE_DEFINITIONS
-
+from app.constants.file_defs import FILE_DEFINITIONS, FileType
 from app.constants.scoring import AttachmentScores
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ class HarmfulAttachmentDetector(BaseDetector):
                 # --- Named Attachment Checks ---
 
                 # Check 1: Is it explicitly Dangerous?
-                if file_def and file_def["type"] == "DANGEROUS":
+                if file_def and file_def["type"] == FileType.DANGEROUS:
                     reasons.append(f"malicious file type ({ext})")
                     max_risk_score = max(max_risk_score, AttachmentScores.MALICIOUS_FILE)
 
@@ -76,8 +75,8 @@ class HarmfulAttachmentDetector(BaseDetector):
 
                 # Check 3: Double Extension Trick
                 fake_def = FILE_DEFINITIONS.get(fake_ext)
-                if fake_def and fake_def["type"] == "SAFE":
-                    if not file_def or file_def["type"] != "SAFE":
+                if fake_def and fake_def["type"] == FileType.SAFE:
+                    if not file_def or file_def["type"] != FileType.SAFE:
                         reasons.append(
                             f"deceptive double extension (.{fake_ext}.{ext})"
                         )

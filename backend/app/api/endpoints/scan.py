@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post("/scan", response_model=ScanResponse)
-async def scan_email(
+def scan_email(
     email_request: EmailRequest,
     ml_service: MLService = Depends(get_ml_service),
     scoring_service: ScoringService = Depends(get_scoring_service),
