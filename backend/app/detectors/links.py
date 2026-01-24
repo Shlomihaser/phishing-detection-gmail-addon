@@ -15,21 +15,21 @@ class MaliciousLinkDetector(BaseDetector):
     def evaluate(self, email: Email) -> Optional[DetectorResult]:
         flagged_links = {}
         max_risk_score = 0.0
-        
+
         for link in email.urls:
             url = link.url
             text = link.text
             reasons = []
-            
+
             # --- 1. IP Address Check (Score: 40) ---
             ext = extract_domain(url)
             try:
                 # Remove protocol and get host
-                clean_url = url.replace('https://', '').replace('http://', '')
-                host = clean_url.split('/')[0].split(':')[0]
-                
+                clean_url = url.replace("https://", "").replace("http://", "")
+                host = clean_url.split("/")[0].split(":")[0]
+
                 # Remove brackets for IPv6 (e.g., [::1])
-                host = host.strip('[]')
+                host = host.strip("[]")
                 # This catches: IPv4, IPv6, Hex IPs, Decimal IPs, Octal IPs
                 ip = ipaddress.ip_address(host)
                 reasons.append(f"destination is a raw IP address ({ip})")
@@ -43,14 +43,22 @@ class MaliciousLinkDetector(BaseDetector):
                 # Extract domain from the visible text
                 text_ext = extract_domain(text.strip())
                 url_ext = extract_domain(url)
-                
+
                 # We compare registered_domain (e.g., 'google.com' from 'drive.google.com')
-                if text_ext.top_domain_under_public_suffix and url_ext.top_domain_under_public_suffix:
+                if (
+                    text_ext.top_domain_under_public_suffix
+                    and url_ext.top_domain_under_public_suffix
+                ):
                     # If domains differ, it's a mismatch
-                    if text_ext.top_domain_under_public_suffix.lower() != url_ext.top_domain_under_public_suffix.lower():
-                        reasons.append(f"link masking detected (text says '{text_ext.top_domain_under_public_suffix}' but goes to '{url_ext.top_domain_under_public_suffix}')")
+                    if (
+                        text_ext.top_domain_under_public_suffix.lower()
+                        != url_ext.top_domain_under_public_suffix.lower()
+                    ):
+                        reasons.append(
+                            f"link masking detected (text says '{text_ext.top_domain_under_public_suffix}' but goes to '{url_ext.top_domain_under_public_suffix}')"
+                        )
                         max_risk_score = max(max_risk_score, 50.0)
-            
+
             # --- 3. URL Shorteners (Score: 25) ---
             # domain + suffix check (e.g. bit.ly)
             full_domain = f"{ext.domain}.{ext.suffix}".lower()
@@ -68,7 +76,7 @@ class MaliciousLinkDetector(BaseDetector):
 
         if not flagged_links:
             return None
-            
+
         issue_details = []
         for url, issues in flagged_links.items():
             issue_details.append(f"Link '{url}': {', '.join(issues)}")
@@ -76,5 +84,5 @@ class MaliciousLinkDetector(BaseDetector):
         return DetectorResult(
             detector_name="Malicious Link Detector",
             score_impact=max_risk_score,
-            description="Suspicious links detected: " + "; ".join(issue_details)
+            description="Suspicious links detected: " + "; ".join(issue_details),
         )

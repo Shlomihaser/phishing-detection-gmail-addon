@@ -1,6 +1,7 @@
 from app.detectors.brand_protection import BrandProtectionDetector
 from app.models.domain import Email, AuthHeaders
 
+
 def test_brand_impersonation_name():
     """
     Scenario: Sender Name Impersonation.
@@ -15,14 +16,15 @@ def test_brand_impersonation_name():
         urls=[],
         attachments=[],
         auth_results=AuthHeaders(),
-        headers={}
+        headers={},
     )
-    
+
     result = detector.evaluate(email)
-    
+
     assert result is not None
     assert result.score_impact >= 75.0
     assert "claims to be 'Microsoft'" in result.description
+
 
 def test_brand_typosquatting_domain():
     """
@@ -38,13 +40,14 @@ def test_brand_typosquatting_domain():
         urls=[],
         attachments=[],
         auth_results=AuthHeaders(),
-        headers={}
+        headers={},
     )
-    
+
     result = detector.evaluate(email)
-    
+
     assert result is not None
     assert "mimics protected brand 'microsoft'" in result.description.lower()
+
 
 def test_brand_legitimate_pass():
     """
@@ -60,8 +63,8 @@ def test_brand_legitimate_pass():
         urls=[],
         attachments=[],
         auth_results=AuthHeaders(),
-        headers={}
+        headers={},
     )
-    
+
     result = detector.evaluate(email)
     assert result is None  # Should pass safely

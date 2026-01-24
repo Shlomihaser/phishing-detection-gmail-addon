@@ -15,7 +15,6 @@ var CONFIG = {
     var url = props.getProperty('API_URL');
     
     if (!url) {
-      // Fallback for development - remove or change in production
       console.warn('API_URL not set in Script Properties. Using default.');
       return 'http://localhost:8000/api/scan';
     }
