@@ -1,11 +1,11 @@
 import ipaddress
-from app.utils.url_parser import extract_domain
-
 from typing import Optional
-from app.models.domain import Email
-from app.models.risk import DetectorResult
+
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.utils.url_parser import extract_domain
 from app.constants.links import SUSPICIOUS_TLDS, SHORTENER_DOMAINS
 from app.constants.regex import URL_LIKE_PATTERN
 

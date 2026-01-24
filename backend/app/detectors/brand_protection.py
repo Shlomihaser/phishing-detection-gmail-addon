@@ -1,10 +1,11 @@
 from typing import Optional
-from app.models.domain import Email
-from app.models.risk import DetectorResult
+
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
+from app.models.domain import Email
+from app.models.risk import DetectorResult
 from app.utils.text_processing import normalize_homoglyphs, levenshtein_distance
-from app.constants.brands import PROTECTED_BRANDS, VALID_BRAND_DOMAINS
+from app.constants.brands import VALID_BRAND_DOMAINS
 
 
 @DetectorRegistry.register
@@ -19,7 +20,7 @@ class BrandProtectionDetector(BaseDetector):
         
         # 1. Check for Sender Name Impersonation
         # (Claims to be "Microsoft" but not from microsoft.com)
-        for brand in PROTECTED_BRANDS:
+        for brand in VALID_BRAND_DOMAINS.keys():
             # Does name contain "Microsoft"?
             if brand in sender_name:
                 # Is the domain Valid?
@@ -45,7 +46,7 @@ class BrandProtectionDetector(BaseDetector):
         # Normalize HOmoglyphs
         norm_domain = normalize_homoglyphs(sender_domain).split('.')[0] # stem
 
-        for brand in PROTECTED_BRANDS:
+        for brand in VALID_BRAND_DOMAINS.keys():
             # Distance Check
             dist = levenshtein_distance(norm_domain, brand)
             threshold = 2 if len(brand) > 5 else 1

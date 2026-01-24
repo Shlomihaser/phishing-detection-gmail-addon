@@ -1,15 +1,24 @@
 import mailparser
 import authres
+import base64
+import logging
 
 from app.models.domain import Email, AuthHeaders, Link, Attachment
 from app.constants.regex import URL_PATTERN
+from app.exceptions import EmailParsingError
 from typing import List, Dict, Optional
 from email.utils import parseaddr
 from bs4 import BeautifulSoup
 
+logger = logging.getLogger(__name__)
+
 class EmailParser:
     def __init__(self, mime_content: str):
-        self.mail = mailparser.parse_from_string(mime_content)
+        try:
+            self.mail = mailparser.parse_from_string(mime_content)
+        except Exception as e:
+            logger.error(f"Failed to parse email MIME: {e}")
+            raise EmailParsingError(f"Could not parse email content: {str(e)}")
     
     def parse(self) -> Email:
         return Email(
@@ -75,7 +84,7 @@ class EmailParser:
                         clean_href = href.rstrip('.,;:!?')
                         links_map[clean_href] = text
             except Exception as e:
-                print(f"Error parsing HTML for URLs: {e}")
+                logger.warning(f"Error parsing HTML for URLs: {e}")
                 # Fallback to regex for HTML if BS4 fails
                 urls = URL_PATTERN.findall(html_content)
                 for url in urls:
@@ -97,29 +106,49 @@ class EmailParser:
 
 
     def _extract_attachments(self) -> List[Attachment]:
-        """Extract attachment metadata."""
+        """Extract attachment metadata with proper binary handling."""
         attachments = []
         
         if self.mail.attachments:
             for att in self.mail.attachments:
                 try:
                     raw_payload = att.get('payload')
-                    if isinstance(raw_payload, str):
-                        content_bytes = raw_payload.encode('utf-8')
-                    else:
-                        content_bytes = raw_payload or b''
-
-                    content_bytes = content_bytes[:2048]
+                    content_bytes = self._payload_to_bytes(raw_payload)
+                    
+                    # Only keep first 2KB for magic number analysis
+                    content_bytes = content_bytes[:2048] if content_bytes else None
                     
                     attachment = Attachment(
                         filename=att.get('filename'),
-                        content_header=content_bytes if content_bytes else None
+                        content_header=content_bytes
                     )
                     attachments.append(attachment)
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to extract attachment: {e}")
                     continue
     
         return attachments
+    
+    def _payload_to_bytes(self, raw_payload) -> bytes:
+        """
+        Safely convert attachment payload to bytes.
+        Handles: bytes, Base64 strings, and plain strings.
+        """
+        if raw_payload is None:
+            return b''
+        
+        if isinstance(raw_payload, bytes):
+            return raw_payload
+        
+        if isinstance(raw_payload, str):
+            # Try Base64 decode first (common in MIME attachments)
+            try:
+                return base64.b64decode(raw_payload)
+            except Exception:
+                # Fall back to UTF-8 encoding with error handling
+                return raw_payload.encode('utf-8', errors='surrogateescape')
+        
+        return b''
 
     def _extract_auth_results(self) -> AuthHeaders:
         """

@@ -1,13 +1,12 @@
+import logging
 from typing import List
+
+logger = logging.getLogger(__name__)
 from ..models.domain import Email
 from ..models.risk import RiskAssessment, RiskLevel
 
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
-
-# Import detectors package to trigger registration
-# This single import causes all detector modules to load and register
-import app.detectors  # noqa: F401 - import triggers registration
 
 
 # Risk Scoring Thresholds
@@ -50,16 +49,21 @@ class ScoringService:
         critical_trigger = False
         
         for detector in self.detectors:
-            result = detector.evaluate(email)
-            if result:
-                detectors_score += result.score_impact
-                details.append(result)
-                reasons.append(result.description)
-                
-                # Critical Trigger Check:
-                # If any single detector says "This is critical", we assume it's critical.
-                if result.score_impact >= RiskThresholds.CRITICAL_IMPACT:
-                    critical_trigger = True
+            try:
+                result = detector.evaluate(email)
+                if result:
+                    detectors_score += result.score_impact
+                    details.append(result)
+                    reasons.append(result.description)
+                    
+                    # Critical Trigger Check:
+                    # If any single detector says "This is critical", we assume it's critical.
+                    if result.score_impact >= RiskThresholds.CRITICAL_IMPACT:
+                        critical_trigger = True
+            except Exception as e:
+                # Log the error but continue scanning with other detectors
+                logger.error(f"Detector {detector} failed: {e}")
+                continue
 
         # Cap detectors score at 100 before weighting
         detectors_score = min(max(detectors_score, 0.0), 100.0)

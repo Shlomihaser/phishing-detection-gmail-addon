@@ -1,9 +1,9 @@
 import uvicorn
-
-from app.settings.config import settings
 from fastapi import FastAPI
-from app.api.endpoints.scan import router as api_router
 
+import app.detectors  # Register all detectors
+from app.settings.config import settings
+from app.api.endpoints.scan import router as api_router
 
 app = FastAPI(
     title="Phishing Detection API",

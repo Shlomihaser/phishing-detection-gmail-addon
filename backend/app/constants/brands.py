@@ -1,19 +1,4 @@
-# Brands we actively monitor for impersonation
-PROTECTED_BRANDS = [
-    "microsoft", 
-    "google", 
-    "amazon", 
-    "paypal", 
-    "apple", 
-    "netflix", 
-    "facebook", 
-    "linkedin", 
-    "chase", 
-    "dhl"
-]
-
-# Legitimate domains owned by these brands (Whitelist)
-# If a sender matches one of these valid domains strategies, we SKIP checks.
+# Legitimate domains owned by known brands (Whitelist)
 VALID_BRAND_DOMAINS = {
     "microsoft": {"microsoft.com", "office.com", "outlook.com", "azure.com"},
     "google": {"google.com", "gmail.com", "youtube.com", "android.com"},

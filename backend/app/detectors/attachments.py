@@ -1,11 +1,16 @@
-from typing import Optional
+import logging
 import os
+from typing import Optional
+
 import magic
-from app.models.domain import Email
-from app.models.risk import DetectorResult
+
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
+from app.models.domain import Email
+from app.models.risk import DetectorResult
 from app.constants.file_defs import FILE_DEFINITIONS
+
+logger = logging.getLogger(__name__)
 
 
 @DetectorRegistry.register
@@ -22,8 +27,8 @@ class HarmfulAttachmentDetector(BaseDetector):
             if attachment.content_header:
                 try:
                     detected_mime = magic.from_buffer(attachment.content_header, mime=True)
-                except Exception:
-                    pass  # Keep default if magic fails
+                except Exception as e:
+                    logger.warning(f"Magic file detection failed for attachment: {e}")
             
             # --- Step 2: Extract filename and extension ---
             ext = ""

@@ -1,10 +1,11 @@
 from typing import Optional
-from app.utils.url_parser import extract_domain
-from app.models.domain import Email
-from app.models.risk import DetectorResult
+
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
-from app.constants.headers import MAILING_SERVICE_DOMAINS
+from app.models.domain import Email
+from app.models.risk import DetectorResult
+from app.utils.url_parser import extract_domain
+from app.constants.allowed_hosts import MAILING_SERVICE_DOMAINS
 
 
 @DetectorRegistry.register
