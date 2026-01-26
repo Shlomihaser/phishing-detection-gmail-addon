@@ -23,5 +23,6 @@ class RiskAssessment(BaseModel):
 
 
 class MLPrediction(BaseModel):
-    is_phishing: bool
-    confidence: float
+    is_phishing: bool = False
+    confidence: float = 0.0
+    is_scanned: bool = True

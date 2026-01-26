@@ -2,7 +2,7 @@ import logging
 from typing import List, NamedTuple
 
 from app.models.domain import Email
-from app.models.risk import RiskAssessment, RiskLevel, DetectorResult
+from app.models.risk import RiskAssessment, RiskLevel, DetectorResult, MLPrediction
 from app.detectors.base import BaseDetector
 from app.detectors.registry import DetectorRegistry
 from app.constants.scoring import RiskThresholds
@@ -24,20 +24,28 @@ class ScoringService:
         self.detectors = detectors or DetectorRegistry.get_all_detectors()
 
     def calculate_risk(
-        self, email: Email, ml_score: float = 0.0, ml_is_phishing: bool = False
+        self, email: Email, ml_result: MLPrediction
     ) -> RiskAssessment:
         """Calculate overall phishing risk by combining detector results with ML score.
         
         Args:
             email: Parsed email object to analyze.
-            ml_score: ML model confidence (0.0-1.0).
-            ml_is_phishing: Whether ML predicts phishing.
+            ml_result: Result from ML service prediction.
         
         Returns:
             RiskAssessment with final score, level, and detailed reasons.
         """
         analysis = self._run_detectors(email)
-        final_score, reasons = self._calculate_final_score(analysis, ml_score, ml_is_phishing)
+        
+        if not ml_result.is_scanned:
+            final_score = analysis.score
+            reasons = list(analysis.reasons)
+            logger.warning("ML Service unavailable")
+        else:
+            final_score, reasons = self._calculate_final_score(
+                analysis, ml_result.confidence, ml_result.is_phishing
+            )
+
         level = self._determine_risk_level(final_score)
 
         return RiskAssessment(

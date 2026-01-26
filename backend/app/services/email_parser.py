@@ -1,10 +1,9 @@
 import base64
 import logging
-from email.utils import parseaddr
-from typing import Dict, List, Optional
-
 import authres
 import mailparser
+
+from typing import Dict, List, Optional, Union
 from bs4 import BeautifulSoup
 
 from app.constants.regex import URL_PATTERN
@@ -39,33 +38,34 @@ class EmailParser:
             message_id=self._extract_header("Message-ID"),
         )
 
+    
     def _extract_sender_name(self) -> Optional[str]:
         if self.mail.from_ and len(self.mail.from_) > 0:
             name = self.mail.from_[0][0]
             return name
-        return None
+        return
 
-    def _extract_sender_email(self) -> str:
+    def _extract_sender_email(self) -> Optional[str]:
         if self.mail.from_ and len(self.mail.from_) > 0:
             email = self.mail.from_[0][1]
             return email
-        return None
+        return
 
     def _extract_reply_to(self) -> Optional[str]:
         if self.mail.reply_to and len(self.mail.reply_to) > 0:
             email = self.mail.reply_to[0][1]
             return email
-        return None
+        return
 
     def _extract_body_plain(self) -> Optional[str]:
         if self.mail.text_plain:
             return "\n".join(self.mail.text_plain)
-        return None
+        return
 
     def _extract_body_html(self) -> Optional[str]:
         if self.mail.text_html:
             return "\n".join(self.mail.text_html)
-        return None
+        return
 
     def _extract_urls(self) -> List[Link]:
         """Extract all URLs from the email body (plain text and HTML)."""
@@ -121,7 +121,8 @@ class EmailParser:
 
         return attachments
 
-    def _payload_to_bytes(self, raw_payload) -> bytes:
+    @staticmethod
+    def _payload_to_bytes(raw_payload: Optional[Union[str, bytes]]) -> bytes:
         """
         Safely convert attachment payload to bytes.
         Handles: bytes, Base64 strings, and plain strings.

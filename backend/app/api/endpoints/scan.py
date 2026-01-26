@@ -20,19 +20,13 @@ def scan_email(
     email_parser = EmailParser(email_request.mime)
     parsed_email = email_parser.parse()
 
-    text_content = _build_text_content(parsed_email)
+    text_content = f"{parsed_email.subject} {parsed_email.body_plain}".strip()
     ml_result = ml_service.predict(text_content)
-
+    
     risk_assessment = scoring_service.calculate_risk(
         parsed_email,
-        ml_score=ml_result.confidence,
-        ml_is_phishing=ml_result.is_phishing,
+        ml_result=ml_result,
     )
 
     return ScanResponse.from_results(risk=risk_assessment, ml=ml_result)
 
-
-def _build_text_content(email) -> str:
-    subject = email.subject or ""
-    body = email.body_plain or ""
-    return f"{subject} {body}".strip()

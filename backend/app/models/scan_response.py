@@ -22,6 +22,7 @@ class DetectorDetail(BaseModel):
 class ScanDetails(BaseModel):
     ml_score: float
     ml_prediction: str
+    ml_is_scanned: bool = True
     detectors: List[DetectorDetail]
 
     @classmethod
@@ -31,6 +32,7 @@ class ScanDetails(BaseModel):
         return cls(
             ml_score=round(ml.confidence * 100, 1),
             ml_prediction=RiskLevel.DANGEROUS if ml.is_phishing else RiskLevel.SAFE,
+            ml_is_scanned=ml.is_scanned,
             detectors=[DetectorDetail.from_risk_result(d) for d in detector_results],
         )
 
