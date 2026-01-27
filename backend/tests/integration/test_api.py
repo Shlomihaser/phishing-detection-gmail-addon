@@ -1,10 +1,12 @@
-from fastapi.testclient import TestClient
 from app.main import app
+
+from fastapi.testclient import TestClient
+from tests.factories import MockEmailBuilder
 
 client = TestClient(app, raise_server_exceptions=False)
 
 
-def test_scan_endpoint_success(email_builder, mock_ml_service):
+def test_scan_endpoint_success(email_builder):
     """
     Scenario: Happy Path Scan.
     Goal: Send a valid email MIME -> Get back a 200 JSON response with risk analysis.
@@ -19,10 +21,9 @@ def test_scan_endpoint_success(email_builder, mock_ml_service):
     data = response.json()
     assert "status" in data
     assert "confidence" in data
-    assert data["details"]["ml_prediction"] == "SAFE"
 
 
-def test_scan_endpoint_malformed_mime(mock_ml_service):
+def test_scan_endpoint_malformed_mime():
     """
     Scenario: Bad Input (User sending garbage).
     Goal: Send invalid non-MIME string -> Get 200 (Parser is resilient).
@@ -41,7 +42,7 @@ def test_scan_endpoint_crash_handling(mocker):
         side_effect=Exception("Database Boom"),
     )
 
-    from tests.factories import MockEmailBuilder
+   
 
     raw_mime = MockEmailBuilder().build()
 

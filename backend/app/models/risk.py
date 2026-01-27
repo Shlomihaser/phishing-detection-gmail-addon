@@ -22,7 +22,4 @@ class RiskAssessment(BaseModel):
     details: List[DetectorResult]
 
 
-class MLPrediction(BaseModel):
-    is_phishing: bool = False
-    confidence: float = 0.0
-    is_scanned: bool = True
+

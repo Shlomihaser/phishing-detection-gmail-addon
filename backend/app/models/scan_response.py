@@ -1,8 +1,7 @@
-from app.models.risk import RiskLevel
 from pydantic import BaseModel
 from typing import List
 
-from app.models.risk import DetectorResult, MLPrediction, RiskAssessment
+from app.models.risk import DetectorResult, RiskAssessment
 
 
 class DetectorDetail(BaseModel):
@@ -20,19 +19,13 @@ class DetectorDetail(BaseModel):
 
 
 class ScanDetails(BaseModel):
-    ml_score: float
-    ml_prediction: str
-    ml_is_scanned: bool = True
     detectors: List[DetectorDetail]
 
     @classmethod
     def create(
-        cls, ml: MLPrediction, detector_results: List[DetectorResult]
+        cls, detector_results: List[DetectorResult]
     ) -> "ScanDetails":
         return cls(
-            ml_score=round(ml.confidence * 100, 1),
-            ml_prediction=RiskLevel.DANGEROUS if ml.is_phishing else RiskLevel.SAFE,
-            ml_is_scanned=ml.is_scanned,
             detectors=[DetectorDetail.from_risk_result(d) for d in detector_results],
         )
 
@@ -44,12 +37,10 @@ class ScanResponse(BaseModel):
     details: ScanDetails
 
     @classmethod
-    def from_results(
-        cls, risk: RiskAssessment, ml: MLPrediction
-    ) -> "ScanResponse":
+    def from_results(cls, risk: RiskAssessment) -> "ScanResponse":
         return cls(
             status=risk.level.value,
             confidence=risk.score,
             reasons=risk.reasons,
-            details=ScanDetails.create(ml, risk.details),
+            details=ScanDetails.create(risk.details),
         )
