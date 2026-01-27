@@ -1,4 +1,4 @@
-# <img src="gmail-addon/assets/logo.png" width="38" style="vertical-align: middle; margin-right: 10px;"> Phishing Detection Gmail Addon
+# <img src="gmail-addon/assets/logo.png" width="35" align="left" style="margin-right: 12px;"> Phishing Detection Gmail Addon
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.128-green)
@@ -19,7 +19,7 @@ A professional-grade Gmail add-on that scans incoming emails for phishing attemp
 
 | Safe Email | Suspicious Email | Dangerous Email |
 | :---: | :---: | :---: |
-| ![Safe](assets/safe_ex.png) | ![Suspicious](assets/potential_ex.png) | ![Dangerous](assets/dangerous_ex.png) |
+| <img src="assets/safe_ex.png" width="280"> | <img src="assets/potential_ex.png" width="280"> | <img src="assets/dangerous_ex.png" width="280"> |
 
 ## Detection Logic & Scoring
 
