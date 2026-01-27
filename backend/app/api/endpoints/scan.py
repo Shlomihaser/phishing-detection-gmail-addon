@@ -18,7 +18,7 @@ def scan_email(
 
     email_parser = EmailParser(email_request.mime)
     parsed_email = email_parser.parse()
-
+    
     risk_assessment = scoring_service.calculate_risk(parsed_email)
 
     return ScanResponse.from_results(risk=risk_assessment)

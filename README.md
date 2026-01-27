@@ -9,7 +9,7 @@ A professional-grade Gmail add-on that scans incoming emails for phishing attemp
 
 ## What It Checks
 
-- **Word-Based AI Analysis**: Uses a Naive Bayes classifier with TF-IDF vectorization to detect specific phishing keywords and suspicious language patterns with high precision (**0.95+ confidence**).
+- **Word-Based AI Analysis**: Uses a Naive Bayes classifier to detect **urgent**, threatening, or suspicious language patterns with extreme precision (**0.90+ confidence**).
 - **Brand Protection**: Flags emails claiming to be from trusted entities (Microsoft, PayPal, etc.) but sent from unrelated domains.
 - **Malicious Links**: Detects link masking, URL shorteners, raw IPs, and high-risk Top-Level Domains (TLDs).
 - **Harmful Attachments**: Identifies dangerous extensions (`.exe`, `.scr`, `.bat`), double-extension tricks (`invoice.pdf.exe`), and MIME type mismatches.
@@ -19,7 +19,7 @@ A professional-grade Gmail add-on that scans incoming emails for phishing attemp
 
 | Safe Email | Suspicious Email | Dangerous Email |
 | :---: | :---: | :---: |
-| <img src="assets/safe_ex.png" width="280"> | <img src="assets/potential_ex.png" width="280"> | <img src="assets/dangerous_ex.png" width="280"> |
+| <img src="assets/safe_ex.png" width="280" height="480"> | <img src="assets/potential_ex.png" width="280" height="480"> | <img src="assets/dangerous_ex.png" width="280" height="480"> |
 
 ## Detection Logic & Scoring
 
@@ -33,7 +33,7 @@ The system uses an **Aggregative Scoring Model**. Each detector (AI or Heuristic
 | **Critical** | **Dangerous Extension** | 100 | Direct delivery of malware (`.exe`, `.scr`, etc.). |
 | **High** | **Brand Impersonation** | 75 | Uses brand names in display while coming from rogue domains. |
 | **High** | **MIME Mismatch** | 75 | Internal file structure contradicts its extension. |
-| **High** | **AI Phishing Pattern** | 60 - 95 | Naive Bayes detects high-frequency phishing keywords (0.95 - 1.0 confidence). |
+| **High** | **Urgent & Suspicious Language** | 60 - 95 | Naive Bayes detects high-frequency phishing keywords (0.90 - 1.0 confidence). |
 | **Medium** | **Domain Typosquatting** | 60 | Visual tricks like `micr0soft.com` or `paypa1.com`. |
 | **Medium** | **Link Masking** | 50 | Text shows `google.com`, but the link redirects to `evil.com`. |
 | **Low** | **Auth Failure** | 40 | SPF/DKIM/DMARC failed (common in low-tier marketing spam). |
@@ -43,7 +43,7 @@ The system uses an **Aggregative Scoring Model**. Each detector (AI or Heuristic
 
 - **Algorithm**: Multinomial Naive Bayes (MNB).
 - **Features**: TF-IDF Vectorization (Word & Bigram patterns, max 5,000 features).
-- **Dataset**: Trained on the CEAS 2008 phishing corpus (**50,000 samples**).
+- **Dataset**: [Phishing Email Dataset (Kaggle)](https://www.kaggle.com/datasets/naserabdullahalam/phishing-email-dataset) using the CEAS 2008 corpus.
 - **Speed**: Ultra-fast inference (< 10ms per email).
 - **Tuning**: High confidence threshold (**0.95**) to focus on clear "Smoking Gun" keywords.
 
