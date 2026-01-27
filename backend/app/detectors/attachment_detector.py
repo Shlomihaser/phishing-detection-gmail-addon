@@ -4,8 +4,8 @@ import magic
 
 from typing import Optional, NamedTuple
 
-from app.detectors.base import BaseDetector
-from app.detectors.registry import DetectorRegistry
+from app.detectors.core.base import BaseDetector
+from app.detectors.core.registry import DetectorRegistry
 from app.models.domain import Email, Attachment
 from app.models.risk import DetectorResult
 from app.constants.file_defs import FILE_DEFINITIONS, FileType

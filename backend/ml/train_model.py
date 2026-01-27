@@ -3,24 +3,27 @@ import logging
 import joblib
 import pandas as pd
 from typing import Tuple, Optional
+import sys
+
+# Ensure backend root is in python path to import app.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.settings.config import settings
 
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
+from sentence_transformers import SentenceTransformer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Model Configuration
+BERT_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
 def get_paths() -> Tuple[str, str, str]:
     """Return paths for dataset and artifacts."""
-    base_dir = os.path.dirname(__file__)
-    dataset_path = os.path.join(base_dir, "CEAS_08.csv")
-    model_path = os.path.join(base_dir, "phishing_model.joblib")
-    vectorizer_path = os.path.join(base_dir, "tfidf_vectorizer.joblib")
-    return dataset_path, model_path, vectorizer_path
+    return str(settings.DATASET_PATH), str(settings.PHISHING_MODEL_PATH), ""
 
 
 def load_data(filepath: str) -> Optional[pd.DataFrame]:
@@ -30,7 +33,7 @@ def load_data(filepath: str) -> Optional[pd.DataFrame]:
         return pd.read_csv(filepath)
     except FileNotFoundError:
         logger.error(f"Dataset not found at {filepath}")
-        return None
+        return 
 
 
 def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
@@ -39,7 +42,7 @@ def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     if not all(col in df.columns for col in required_columns):
         logger.error(f"Dataset missing required columns: {required_columns}")
         logger.info(f"Found columns: {df.columns.tolist()}")
-        return None
+        return 
 
     df = df[required_columns].copy()
 
@@ -50,7 +53,7 @@ def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
             return 1
         elif s in ["ham", "safe", "0", "valid"]:
             return 0
-        return None
+        return
 
     df["label"] = df["label"].apply(map_label)
     
@@ -70,24 +73,27 @@ def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     return df
 
 
-def train_and_evaluate(df: pd.DataFrame) -> Tuple[MultinomialNB, TfidfVectorizer]:
-    """Train Naive Bayes model and evaluate performance."""
-    logger.info("Preparing features...")
-    X = df["subject"] + " " + df["body"]
-    y = df["label"]
+def train_and_evaluate(df: pd.DataFrame) -> Tuple[LogisticRegression, SentenceTransformer]:
+    """Train Logistic Regression on BERT embeddings."""
+    logger.info(f"Loading BERT model: {BERT_MODEL_NAME}...")
+    encoder = SentenceTransformer(BERT_MODEL_NAME)
 
-    # Initialize TF-IDF Vectorizer
-    tfidf = TfidfVectorizer(stop_words="english", max_features=5000, ngram_range=(1, 2))
-    X_tfidf = tfidf.fit_transform(X)
+    logger.info("Encoding text features (this may take a while)...")
+    # Combine subject and body
+    texts = (df["subject"] + " " + df["body"]).tolist()
+    
+    # Generate Embeddings
+    X_embeddings = encoder.encode(texts, show_progress_bar=True, batch_size=32)
+    y = df["label"]
 
     # Split Data
     X_train, X_test, y_train, y_test = train_test_split(
-        X_tfidf, y, test_size=0.2, random_state=42
+        X_embeddings, y, test_size=0.2, random_state=42
     )
 
-    # Train Model
-    logger.info("Training Naive Bayes model...")
-    model = MultinomialNB()
+    # Train Model (Logistic Regression works well with high-dim embeddings)
+    logger.info("Training Logistic Regression classifier...")
+    model = LogisticRegression(max_iter=1000)
     model.fit(X_train, y_train)
 
     # Evaluate Model
@@ -97,21 +103,19 @@ def train_and_evaluate(df: pd.DataFrame) -> Tuple[MultinomialNB, TfidfVectorizer
     print("\nClassification Report:\n")
     print(report)
 
-    return model, tfidf
+    return model, encoder
 
 
-def save_artifacts(model, vectorizer, model_path: str, vectorizer_path: str):
-    """Save trained model and vectorizer to disk."""
-    logger.info(f"Saving model to {model_path}...")
+def save_artifacts(model, encoder, model_path: str, vectorizer_path: str):
+    """Save trained classifier. BERT model is loaded by name, so we just save the classifier."""
+    logger.info(f"Saving classifier to {model_path}...")
     joblib.dump(model, model_path)
-    logger.info(f"Saving vectorizer to {vectorizer_path}...")
-    joblib.dump(vectorizer, vectorizer_path)
     logger.info("Artifacts saved successfully.")
 
 
 def train_phishing_model():
     """Main orchestration function."""
-    dataset_path, model_path, vectorizer_path = get_paths()
+    dataset_path, model_path, _ = get_paths()
     
     df = load_data(dataset_path)
     if df is None:
@@ -121,8 +125,8 @@ def train_phishing_model():
     if df is None:
         return
 
-    model, vectorizer = train_and_evaluate(df)
-    save_artifacts(model, vectorizer, model_path, vectorizer_path)
+    model, encoder = train_and_evaluate(df)
+    save_artifacts(model, encoder, model_path, "")
 
 
 if __name__ == "__main__":

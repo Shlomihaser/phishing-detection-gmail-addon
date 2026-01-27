@@ -13,11 +13,13 @@ class Settings(BaseSettings):
 
     @property
     def PHISHING_MODEL_PATH(self) -> Path:
-        return self.ML_DIR / "phishing_model.joblib"
+        return self.ML_DIR / "phishing_model_bert.joblib"
 
     @property
-    def TFIDF_VECTORIZER_PATH(self) -> Path:
-        return self.ML_DIR / "tfidf_vectorizer.joblib"
+    def DATASET_PATH(self) -> Path:
+        return self.ML_DIR / "CEAS_08.csv"
+
+
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -1,4 +1,4 @@
-from app.detectors.links import MaliciousLinkDetector
+from app.detectors.link_detector import MaliciousLinkDetector
 from app.models.domain import Email, Link, AuthHeaders
 
 

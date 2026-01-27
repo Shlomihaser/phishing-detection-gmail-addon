@@ -1,8 +1,8 @@
 import ipaddress
 from typing import Optional
 
-from app.detectors.base import BaseDetector
-from app.detectors.registry import DetectorRegistry
+from app.detectors.core.base import BaseDetector
+from app.detectors.core.registry import DetectorRegistry
 from app.models.domain import Email, Link
 from app.models.risk import DetectorResult
 from app.utils.url_parser import extract_domain

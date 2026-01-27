@@ -1,8 +1,8 @@
-from app.detectors.attachments import HarmfulAttachmentDetector
+from app.detectors.attachment_detector import HarmfulAttachmentDetector
 from app.models.domain import Email, Attachment, AuthHeaders
 import logging
 
-logging.getLogger("app.detectors.attachments").setLevel(logging.ERROR)
+logging.getLogger("app.detectors.attachment_detector").setLevel(logging.ERROR)
 
 
 def test_attachment_dangerous_extension():

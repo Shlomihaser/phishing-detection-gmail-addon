@@ -8,14 +8,16 @@
   "addOns": {
     "common": {
       "name": "Phishing Detector",
-      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/security_black_24dp.png",
+      "logoUrl": "https://raw.githubusercontent.com/Shlomihaser/phishing-detection-gmail-addon/d9472bf259d2a58e885b0e1343b4f73a196f3106/gmail-addon/assets/logo.png",
       "useLocaleFromApp": true
     },
     "gmail": {
-      "contextualTriggers": [{
-        "unconditional": {},
-        "onTriggerFunction": "onGmailMessageOpen"
-      }],
+      "contextualTriggers": [
+        {
+          "unconditional": {},
+          "onTriggerFunction": "onGmailMessageOpen"
+        }
+      ],
       "primaryColor": "#4285F4",
       "secondaryColor": "#FBBC04"
     }

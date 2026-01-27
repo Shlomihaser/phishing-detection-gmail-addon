@@ -1,4 +1,4 @@
-from app.detectors.brand_protection import BrandProtectionDetector
+from app.detectors.brand_detector import BrandProtectionDetector
 from app.models.domain import Email, AuthHeaders
 
 

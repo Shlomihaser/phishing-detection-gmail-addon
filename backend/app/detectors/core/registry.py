@@ -1,7 +1,7 @@
 from typing import List, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.detectors.base import BaseDetector
+    from app.detectors.core.base import BaseDetector
 
 
 class DetectorRegistry:

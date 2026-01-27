@@ -1,4 +1,4 @@
-from app.detectors.header_analysis import HeaderAnalysisDetector
+from app.detectors.header_detector import HeaderAnalysisDetector
 from app.services.email_parser import EmailParser
 
 
