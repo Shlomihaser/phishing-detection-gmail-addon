@@ -8,7 +8,7 @@
   "addOns": {
     "common": {
       "name": "Phishing Detector",
-      "logoUrl": "https://raw.githubusercontent.com/Shlomihaser/phishing-detection-gmail-addon/cace8f03d2f8faeb0b67ce16291a94f26829d86b/gmail-addon/assets/logo.png",
+      "logoUrl": "https://raw.githubusercontent.com/Shlomihaser/phishing-detection-gmail-addon/20844711c0acceec6f5550b04de0d2bdbfe85c75/gmail-addon/assets/logo.png",
       "useLocaleFromApp": true
     },
     "gmail": {

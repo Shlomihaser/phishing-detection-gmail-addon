@@ -38,6 +38,12 @@ def load_data(filepath: str) -> Optional[pd.DataFrame]:
 
 def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     """Clean and normalize dataset labels and features."""
+    # Check for Kaggle format
+    if "Email Text" in df.columns and "Email Type" in df.columns:
+        logger.info("Detected Kaggle Phishing Email dataset format.")
+        df = df.rename(columns={"Email Text": "body", "Email Type": "label"})
+        df["subject"] = "" # Kaggle dataset doesn't have subject
+    
     required_columns = ["subject", "body", "label"]
     if not all(col in df.columns for col in required_columns):
         logger.error(f"Dataset missing required columns: {required_columns}")
@@ -49,9 +55,9 @@ def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     # Normalize labels
     def map_label(val):
         s = str(val).lower().strip()
-        if s in ["spam", "phishing", "1"]:
+        if s in ["spam", "phishing", "phishing email", "1"]:
             return 1
-        elif s in ["ham", "safe", "0", "valid"]:
+        elif s in ["ham", "safe", "safe email", "0", "valid"]:
             return 0
         return
 
@@ -67,7 +73,13 @@ def clean_data(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     df["subject"] = df["subject"].fillna("")
     df["body"] = df["body"].fillna("")
     
-    logger.info(f"Data cleaned. Shape: {df.shape}")
+    # LIMIT: Sample 20,000 rows for faster training if dataset is large
+    MAX_SAMPLES = 20000
+    if len(df) > MAX_SAMPLES:
+        logger.info(f"Sampling {MAX_SAMPLES} rows from {len(df)} total rows for training...")
+        df = df.sample(n=MAX_SAMPLES, random_state=42).reset_index(drop=True)
+
+    logger.info(f"Data cleaned and sampled. Shape: {df.shape}")
     logger.info(f"Class distribution:\n{df['label'].value_counts()}")
     
     return df

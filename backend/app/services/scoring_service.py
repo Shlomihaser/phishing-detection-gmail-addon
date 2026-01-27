@@ -3,7 +3,7 @@ from typing import List
 
 from app.models.domain import Email
 from app.models.risk import RiskAssessment, RiskLevel, DetectorResult
-from app.detectors.registry import DetectorRegistry
+from app.detectors.core.registry import DetectorRegistry
 from app.constants.scoring import RiskThresholds
 
 logger = logging.getLogger(__name__)

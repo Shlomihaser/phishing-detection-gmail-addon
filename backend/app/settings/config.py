@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     @property
     def DATASET_PATH(self) -> Path:
-        return self.ML_DIR / "CEAS_08.csv"
+        return self.ML_DIR / "Phishing_Email.csv"
 
 
     

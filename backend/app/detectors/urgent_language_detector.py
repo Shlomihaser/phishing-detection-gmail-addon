@@ -5,7 +5,6 @@ from typing import Optional
 
 from sentence_transformers import SentenceTransformer
 from app.settings.config import settings
-
 from app.models.domain import Email
 from app.models.risk import DetectorResult
 from app.detectors.core.base import BaseDetector

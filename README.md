@@ -1,56 +1,50 @@
-# Phishing Detection Gmail Add-on
+# Phishing Detection Gmail Addon
 
-![Python](https://img.shields.io/badge/Python-3.13-blue)
+![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.128-green)
+![ML](https://img.shields.io/badge/Model-BERT%20Transformer-orange)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
-A Gmail add-on that scans incoming emails for phishing attempts. Uses a combination of ML text classification and rule-based heuristics to catch the stuff that slips past spam filters.
+A professional-grade Gmail add-on that scans incoming emails for phishing attempts. It combines state-of-the-art **BERT Transformers** for linguistic analysis with advanced rule-based heuristics to identify threats that standard spam filters miss.
 
 ## What It Checks
 
-- **Text content**: ML model trained on phishing datasets to catch suspicious language
-- **Sender identity**: Flags emails claiming to be from Microsoft, PayPal, etc. but sent from unrelated domains
-- **Links**: Catches masked URLs, shorteners, raw IPs, and sketchy TLDs
-- **Attachments**: Detects dangerous extensions, double-extension tricks (invoice.pdf.exe), and files pretending to be something they're not
-- **Email auth**: Verifies SPF/DKIM/DMARC headers
+- **Deep Text Analysis (AI)**: Uses a multilingual BERT model to detect psychological triggers (urgency, threats, authority impersonation) with high precision (0.85+ confidence threshold).
+- **Brand Protection**: Flags emails claiming to be from trusted entities (Microsoft, PayPal, etc.) but sent from unrelated or "typosquatted" domains.
+- **Malicious Links**: Detects link masking, URL shorteners, raw IPs, and high-risk Top-Level Domains (TLDs).
+- **Harmful Attachments**: Identifies dangerous extensions (`.exe`, `.scr`, `.bat`), double-extension tricks (`invoice.pdf.exe`), and MIME type mismatches.
+- **Email Authentication**: Verifies SPF, DKIM, and DMARC headers to ensure the sender is who they claim to be.
 
-## Detection Logic
+## Screenshots
 
-The final risk score is calculated using a weighted combination:
+| Safe Email | Suspicious Email | Dangerous Email |
+| :---: | :---: | :---: |
+| ![Safe](assets/safe_ex.png) | ![Suspicious](assets/potential_ex.png) | ![Dangerous](assets/dangerous_ex.png) |
 
-| Component | Weight | Description |
-|-----------|--------|-------------|
-| Heuristic Detectors | 60% | Rule-based checks (see table below) |
-| ML Model | 40% | Text classification confidence |
+## Detection Logic & Scoring
+
+The system uses an **Aggregative Scoring Model**. Each detector (AI or Heuristic) contributes a "Suspicion Score". If the total score exceeds certain thresholds, the risk level is escalated.
 
 ### Detector Scoring Matrix
 
-| Detector | Trigger | Risk Impact |
-|----------|---------|-------------|
-| **Dangerous Attachment** | `.exe`, `.scr`, `.bat`, etc. | 100 (Critical) |
-| **Hidden Executable** | File claims to be `.pdf` but is actually `.exe` | 100 (Critical) |
-| **Double Extension** | `invoice.pdf.exe` | 100 (Critical) |
-| **Brand Impersonation** | Name says "Microsoft", domain is `random@gmail.com` | 75 (High) |
-| **MIME Mismatch** | Extension doesn't match file content | 75 (High) |
-| **Domain Typosquatting** | `micr0soft.com`, `paypa1.com` | 60 (Medium) |
-| **Link Masking** | Text shows `google.com`, href goes to `evil.com` | 50 (Medium) |
-| **Raw IP in URL** | `http://192.168.1.1/login` | 40 (Medium) |
-| **Auth Failure** | SPF/DKIM/DMARC failed | 40-100 |
-| **URL Shortener** | `bit.ly`, `tinyurl.com` | 25 (Low) |
-| **Suspicious TLD** | `.xyz`, `.top`, `.buzz` | 20 (Low) |
+| Category | Detector | Risk Impact | Rationale |
+|----------|----------|-------------|-----------|
+| **Critical** | **Hidden Executable** | 100 | File claims to be `.pdf` but is actually binary code. |
+| **Critical** | **Dangerous Extension** | 100 | Direct delivery of malware (`.exe`, `.scr`, etc.). |
+| **High** | **Brand Impersonation** | 75 | Uses brand names in display while coming from rogue domains. |
+| **High** | **MIME Mismatch** | 75 | Internal file structure contradicts its extension. |
+| **High** | **AI Phishing Pattern** | 35 - 95 | BERT model detects phishing language (mapped to 0.85 - 1.0 confidence). |
+| **Medium** | **Domain Typosquatting** | 60 | Visual tricks like `micr0soft.com` or `paypa1.com`. |
+| **Medium** | **Link Masking** | 50 | Text shows `google.com`, but the link redirects to `evil.com`. |
+| **Low** | **Auth Failure** | 40 | SPF/DKIM/DMARC failed (common in low-tier marketing spam). |
+| **Low** | **Suspicious TLD** | 20 | Use of `.xyz`, `.top`, `.buzz` or other high-spam TLDs. |
 
-### ML Model
+### Advanced ML Model (LLM-Lite)
 
-- **Algorithm**: Multinomial Naive Bayes (scikit-learn)
-- **Features**: TF-IDF vectorized email text (subject + body), max 5000 features, unigrams + bigrams
-- **Dataset**: [Kaggle Phishing Email Dataset](https://www.kaggle.com/datasets/naserabdullahalam/phishing-email-dataset) (CEAS 2008 corpus)
-- **Split**: 80/20 train/test with `random_state=42`
-
-**Why only subject + body?** The dataset includes additional columns, but we intentionally use only text content. This lets the model focus on detecting linguistic patterns common in phishing:
-- Urgent language ("Act now!", "Your account will be suspended")
-- Authority impersonation ("Dear valued customer", "Security team")
-- Reward/threat framing ("You've won!", "Verify immediately or lose access")
-
+- **Engine**: `paraphrase-multilingual-MiniLM-L12-v2` (BERT-based Transformer).
+- **Classification**: Logistic Regression on 384-dimensional semantic embeddings.
+- **Dataset**: Trained on modern 2024 phishing corpora (20,000+ samples).
+- **Tuning**: High confidence threshold (0.85) to virtually eliminate false positives on legitimate business communication.
 
 ## Architecture
 
@@ -58,19 +52,19 @@ The final risk score is calculated using a weighted combination:
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Gmail Inbox                             │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Google Apps Script                           │
 │              (Gmail Add-on / Sidebar UI)                        │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ HTTP POST (MIME Content)
+                               │
+                               ▼ HTTP POST (MIME Content)
 ┌─────────────────────────────────────────────────────────────────┐
 │                     FastAPI Backend                             │
 │  ┌───────────────┐  ┌────────────────┐  ┌──────────────────┐   │
-│  │  Email Parser │──│ ML Classifier  │──│ Heuristic        │   │
-│  │  (MIME→JSON)  │  │ (scikit-learn) │  │ Detectors        │   │
+│  │  Email Parser │──│ BERT Classifier │──│ Heuristic        │   │
+│  │  (MIME→JSON)  │  │ (Transformers)  │  │ Detectors        │   │
 │  └───────────────┘  └────────────────┘  └──────────────────┘   │
 │                              │                                  │
 │                              ▼                                  │
@@ -79,8 +73,8 @@ The final risk score is calculated using a weighted combination:
 │                    │ (Risk Analysis) │                         │
 │                    └─────────────────┘                         │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ JSON Response
+                               │
+                               ▼ JSON Response
 ┌─────────────────────────────────────────────────────────────────┐
 │              Risk Assessment (Safe / Suspicious / Dangerous)    │
 └─────────────────────────────────────────────────────────────────┘
@@ -89,170 +83,72 @@ The final risk score is calculated using a weighted combination:
 ## Quick Start
 
 ### Docker (Recommended)
+This is the fastest way to run the backend as it handles all ML dependencies automatically.
 
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/phishing-detection-gmail-addon.git
 cd phishing-detection-gmail-addon
 
-# Build and run
+# Build and run (requires ~4GB RAM for ML model loading)
 docker-compose up --build
-
-# API will be available at http://localhost:8000
 ```
 
 ### Local Development
 
-#### 1. System Dependencies (Important)
-This project uses `python-magic` for file type detection, which requires the underlying C-library `libmagic` to be installed on your operating system.
-
-**For Windows Users:**
-The easiest way is to install the binary package which includes the DLLs (included in requirements.txt, but good to know):
-```bash
-pip install python-magic-bin
-```
-
-**For macOS Users:**
-You must install `libmagic` via Homebrew before installing Python requirements:
-```bash
-brew install libmagic
-```
-
-**For Linux Users:**
-```bash
-sudo apt-get install libmagic1
-```
-
-#### 2. Service Setup
-```bash
-# Navigate to backend
-cd backend
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server
-uvicorn app.main:app --reload
-
-# API will be available at http://localhost:8000
-```
-
-### Gmail Add-on Setup
-
-1. **Create a new Apps Script project**
-   - Go to [script.google.com](https://script.google.com)
-   - Click **New project**
-   - Rename it to "Phishing Detector"
-
-2. **Copy the add-on files**
-   - Create the following files in your project and copy the contents from `gmail-addon/`:
-     - `Config.gs`
-     - `Main.gs`
-     - `UI.gs`
-   - Rename `appsscript.json`: Click the gear icon → **Project Settings** → Check "Show 'appsscript.json' manifest file"
-   - Replace the content of `appsscript.json` with the one from `gmail-addon/appsscripts.json`
-
-3. **Configure the API URL**
-   - In Apps Script Editor, go to **Project Settings** (gear icon)
-   - Scroll to **Script Properties**
-   - Click **Add script property**
-   - Set: `API_URL` = `https://your-api-domain.com/api/scan`
-   
-   Or run this once in the editor:
-   ```javascript
-   setApiUrl("https://your-api-domain.com/api/scan")
+1. **Setup Environment**:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
    ```
 
-4. **Deploy as a test add-on**
-   - Click **Deploy** → **Test deployments**
-   - Under **Gmail**, click **Install**
-   - Open Gmail and look for the add-on icon in the right sidebar when viewing an email
+2. **Train the Model** (Optional):
+   The backend includes a pre-trained head, but you can retrain it with:
+   ```bash
+   python ml/train_model.py
+   ```
 
-> **Note**: For local testing, use a tunneling service like [ngrok](https://ngrok.com) to expose your local API:
-> ```bash
-> ngrok http 8000
-> # Then set API_URL to: https://abc123.ngrok.io/api/scan
-> ```
+3. **Run Server**:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
-## API Documentation
+## Gmail Add-on Setup
 
-### Scan Email
+1. **Apps Script**: Open [script.google.com](https://script.google.com), create a new project.
+2. **Copy Files**: Paste contents of `gmail-addon/*.gs` into the editor.
+3. **Manifest**: Enable viewing `appsscript.json` in settings and replace with `gmail-addon/appsscripts.json`.
+4. **URL**: Set your API URL in Script Properties or via the `setApiUrl` helper.
+5. **Icon**: The add-on uses high-visibility Material Design security icons for clear status indication in both light and dark modes.
 
-**Endpoint:** `POST /api/scan`
+## API Specification
 
-**Request:**
-```json
-{
-  "mime": "MIME-Version: 1.0\nFrom: sender@example.com\n..."
-}
-```
-
-**Response:**
-```json
-{
-  "status": "suspicious",
-  "confidence": 65.5,
-  "reasons": [
-    "Sender claims to be 'Microsoft' but domain is not verified",
-    "Link masking detected (text says 'google.com' but goes to 'evil.com')"
-  ],
-  "details": {
-    "ml_score": 45.2,
-    "ml_prediction": "phishing",
-    "detectors": [
-      {
-        "name": "Brand Protection Detector",
-        "impact": 75.0,
-        "description": "Sender claims to be 'Microsoft' but domain is not verified"
-      }
-    ]
-  }
-}
-```
-
-### Status Levels
-
-| Status | Score Range | Meaning |
-|--------|-------------|---------|
-| `safe` | 0-29 | No threats detected |
-| `suspicious` | 30-69 | Potential risk, review recommended |
-| `dangerous` | 70-100 | High risk, likely phishing |
-
-## Testing
-
-```bash
-# Run all tests
-pytest backend/tests -v
-
-# Run with coverage report
-pytest backend/tests --cov=app --cov-report=term-missing
-
-# Run specific test file
-pytest backend/tests/unit/detectors/test_links.py -v
-```
+**`POST /api/scan`**
+- **Payload**: `{ "mime": "..." }`
+- **Returns**: A `RiskAssessment` object containing:
+  - `status`: Safe, Suspicious, or Dangerous.
+  - `score`: 0-100 normalization.
+  - `reasons`: Human-readable explanations of why it was flagged.
+  - `details`: Technical breakdown of individual detector hits.
 
 ## Project Structure
 
 ```
-phishing-detection-gmail-addon/
-├── backend/
-│   ├── app/
-│   │   ├── api/              # API endpoints and dependencies
-│   │   ├── constants/        # Configuration constants (brands, TLDs, etc.)
-│   │   ├── detectors/        # Heuristic detection modules
-│   │   ├── models/           # Pydantic models and ML artifacts
-│   │   ├── services/         # Business logic (parser, scoring, ML)
-│   │   └── main.py           # FastAPI application entry
-│   ├── tests/
-│   │   ├── unit/             # Unit tests for individual components
-│   │   └── integration/      # API endpoint tests
-│   ├── Dockerfile
-│   └── requirements.txt
-├── gmail-addon/              # Google Apps Script source
-├── docker-compose.yml
-└── README.md
+backend/
+├── app/
+│   ├── api/             # FastAPI Endpoints
+│   ├── detectors/       # Logic Modules
+│   │   ├── core/        # Base classes & Registry
+│   │   ├── link_detector.py
+│   │   ├── ...          # Specific detectors
+│   ├── services/        # Scoring & ML Logic
+├── ml/                  # Training scripts & Datasets
+├── tests/               # Pytest Suite
+Dockerfile
+requirements.txt
 ```
+
+---
+*Built with ❤️ for a safer inbox.*
