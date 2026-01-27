@@ -39,9 +39,9 @@ class UrgentLanguageDetector(BaseDetector):
             phishing_prob = probabilities[1] 
             
             # TUNING: Naive Bayes is more "aggressive", so we use 0.95+ for extreme precision
-            if phishing_prob > 0.95:
+            if phishing_prob > 0.90:
                 # Normalize 0.95 - 1.0 to 0 - 1.0
-                normalized = (phishing_prob - 0.95) / 0.05
+                normalized = (phishing_prob - 0.90) / 0.05
                 
                 # High certainty -> High impact
                 impact = 60 + (normalized * 35)
