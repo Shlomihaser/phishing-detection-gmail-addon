@@ -19,7 +19,7 @@ A professional-grade Gmail add-on that scans incoming emails for phishing attemp
 
 | Safe Email | Suspicious Email | Dangerous Email |
 | :---: | :---: | :---: |
-| <img src="assets/safe_ex.png" width="280" height="480"> | <img src="assets/potential_ex.png" width="280" height="480"> | <img src="assets/dangerous_ex.png" width="280" height="480"> |
+| <img src="assets/safe_ex.png" style="height: 520px; width: auto;"> | <img src="assets/potential_ex.png" style="height: 520px; width: auto;"> | <img src="assets/dangerous_ex.png" style="height: 520px; width: auto;"> |
 
 ## Detection Logic & Scoring
 
