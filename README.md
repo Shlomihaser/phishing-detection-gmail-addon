@@ -1,16 +1,16 @@
-# Phishing Detection Gmail Addon
+# <img src="gmail-addon/assets/logo.png" width="38" style="vertical-align: middle; margin-right: 10px;"> Phishing Detection Gmail Addon
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.128-green)
-![ML](https://img.shields.io/badge/Model-BERT%20Transformer-orange)
+![ML](https://img.shields.io/badge/Model-Naive%20Bayes-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
-A professional-grade Gmail add-on that scans incoming emails for phishing attempts. It combines state-of-the-art **BERT Transformers** for linguistic analysis with advanced rule-based heuristics to identify threats that standard spam filters miss.
+A professional-grade Gmail add-on that scans incoming emails for phishing attempts. It combines high-speed **Word-Based AI** with advanced rule-based heuristics to identify threats that standard spam filters miss.
 
 ## What It Checks
 
-- **Deep Text Analysis (AI)**: Uses a multilingual BERT model to detect psychological triggers (urgency, threats, authority impersonation) with high precision (0.85+ confidence threshold).
-- **Brand Protection**: Flags emails claiming to be from trusted entities (Microsoft, PayPal, etc.) but sent from unrelated or "typosquatted" domains.
+- **Word-Based AI Analysis**: Uses a Naive Bayes classifier with TF-IDF vectorization to detect specific phishing keywords and suspicious language patterns with high precision (**0.95+ confidence**).
+- **Brand Protection**: Flags emails claiming to be from trusted entities (Microsoft, PayPal, etc.) but sent from unrelated domains.
 - **Malicious Links**: Detects link masking, URL shorteners, raw IPs, and high-risk Top-Level Domains (TLDs).
 - **Harmful Attachments**: Identifies dangerous extensions (`.exe`, `.scr`, `.bat`), double-extension tricks (`invoice.pdf.exe`), and MIME type mismatches.
 - **Email Authentication**: Verifies SPF, DKIM, and DMARC headers to ensure the sender is who they claim to be.
@@ -33,18 +33,19 @@ The system uses an **Aggregative Scoring Model**. Each detector (AI or Heuristic
 | **Critical** | **Dangerous Extension** | 100 | Direct delivery of malware (`.exe`, `.scr`, etc.). |
 | **High** | **Brand Impersonation** | 75 | Uses brand names in display while coming from rogue domains. |
 | **High** | **MIME Mismatch** | 75 | Internal file structure contradicts its extension. |
-| **High** | **AI Phishing Pattern** | 35 - 95 | BERT model detects phishing language (mapped to 0.85 - 1.0 confidence). |
+| **High** | **AI Phishing Pattern** | 60 - 95 | Naive Bayes detects high-frequency phishing keywords (0.95 - 1.0 confidence). |
 | **Medium** | **Domain Typosquatting** | 60 | Visual tricks like `micr0soft.com` or `paypa1.com`. |
 | **Medium** | **Link Masking** | 50 | Text shows `google.com`, but the link redirects to `evil.com`. |
 | **Low** | **Auth Failure** | 40 | SPF/DKIM/DMARC failed (common in low-tier marketing spam). |
 | **Low** | **Suspicious TLD** | 20 | Use of `.xyz`, `.top`, `.buzz` or other high-spam TLDs. |
 
-### Advanced ML Model (LLM-Lite)
+### Classic ML Model (Word-Based)
 
-- **Engine**: `paraphrase-multilingual-MiniLM-L12-v2` (BERT-based Transformer).
-- **Classification**: Logistic Regression on 384-dimensional semantic embeddings.
-- **Dataset**: Trained on modern 2024 phishing corpora (20,000+ samples).
-- **Tuning**: High confidence threshold (0.85) to virtually eliminate false positives on legitimate business communication.
+- **Algorithm**: Multinomial Naive Bayes (MNB).
+- **Features**: TF-IDF Vectorization (Word & Bigram patterns, max 5,000 features).
+- **Dataset**: Trained on the CEAS 2008 phishing corpus (**50,000 samples**).
+- **Speed**: Ultra-fast inference (< 10ms per email).
+- **Tuning**: High confidence threshold (**0.95**) to focus on clear "Smoking Gun" keywords.
 
 ## Architecture
 
@@ -63,8 +64,8 @@ The system uses an **Aggregative Scoring Model**. Each detector (AI or Heuristic
 ┌─────────────────────────────────────────────────────────────────┐
 │                     FastAPI Backend                             │
 │  ┌───────────────┐  ┌────────────────┐  ┌──────────────────┐   │
-│  │  Email Parser │──│ BERT Classifier │──│ Heuristic        │   │
-│  │  (MIME→JSON)  │  │ (Transformers)  │  │ Detectors        │   │
+│  │  Email Parser │──│  Word-Based AI │──│ Heuristic        │   │
+│  │  (MIME→JSON)  │  │ (Naive Bayes)  │  │ Detectors        │   │
 │  └───────────────┘  └────────────────┘  └──────────────────┘   │
 │                              │                                  │
 │                              ▼                                  │
@@ -90,7 +91,7 @@ This is the fastest way to run the backend as it handles all ML dependencies aut
 git clone https://github.com/yourusername/phishing-detection-gmail-addon.git
 cd phishing-detection-gmail-addon
 
-# Build and run (requires ~4GB RAM for ML model loading)
+# Build and run
 docker-compose up --build
 ```
 
@@ -151,4 +152,3 @@ requirements.txt
 ```
 
 ---
-*Built with ❤️ for a safer inbox.*

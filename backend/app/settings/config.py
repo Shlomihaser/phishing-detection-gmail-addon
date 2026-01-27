@@ -13,11 +13,15 @@ class Settings(BaseSettings):
 
     @property
     def PHISHING_MODEL_PATH(self) -> Path:
-        return self.ML_DIR / "phishing_model_bert.joblib"
+        return self.ML_DIR / "phishing_model.joblib"
+
+    @property
+    def PHISHING_VECTORIZER_PATH(self) -> Path:
+        return self.ML_DIR / "vectorizer.joblib"
 
     @property
     def DATASET_PATH(self) -> Path:
-        return self.ML_DIR / "Phishing_Email.csv"
+        return self.ML_DIR / "CEAS_08.csv"
 
 
     
